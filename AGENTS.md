@@ -112,7 +112,7 @@ Antes de entregar cualquier cambio que afecte la app, comprobar:
 14. Que TV en vivo mantenga favoritos (`liveFavorites`), botones de cabecera (`f-fav`, `f-all`, `f-srch`), tecla amarilla y foco al primer canal visible (ver sección 7).
 15. Que el carrusel de catálogo mantenga rieles `.catalog-rail` y loop horizontal de retorno estilo Netflix (ver sección 7).
 16. Que la reproducción en vivo no intente forzar seeks ni alterar `currentTime` en canales 24/7 (ver sección 7).
-17. Que `proxy.js` mantenga la normalización del manifiesto HLS 24/7: renumeración monotónica de `#EXT-X-MEDIA-SEQUENCE` por segmento (`hlsSeqMap`/`hlsSeqNext`), ventana corta de los últimos segmentos, `#EXT-X-START:TIME-OFFSET=-15`, y que VOD/ENDLIST/canales normales sigan intactos (ver sección 7.4).
+17. Que `proxy.js` mantenga la normalización del manifiesto HLS: renumeración monotónica de `#EXT-X-MEDIA-SEQUENCE` por segmento (`hlsSeqMap`/`hlsSeqNext`) en **todos los canales en vivo** (24/7 y normales), ventana corta de los últimos segmentos y `#EXT-X-START:TIME-OFFSET=-15` **solo en 24/7**, y que VOD/ENDLIST sigan intactos y los canales normales se entreguen completos (ver sección 7.4).
 
 Si una tarea visual requiere tocar alguna de estas rutas o módulos protegidos,
 detenerse y pedir autorización explícita al usuario antes de hacerlo.
@@ -223,24 +223,32 @@ Los controles de navegación de canales en vivo, el sistema de favoritos y el ca
    - En canales 24/7 y cualquier emisión de TV en vivo (`X.playerMode === "live"`), **JAMÁS se debe alterar `currentTime` ni forzar seeks automáticos** (por ejemplo, retrasos de latencia como `liveLatencyGuard` o saltos artificiales).
    - En el reproductor nativo HTML5 de webOS, intentar hacer seek o modificar la posición de reproducción en una emisión live HLS/TS destruye la sincronización del demuxer nativo de Starfish y dispara `MEDIA_ERR_DECODE` (`err=3`), congelando la imagen y dejando el canal trabado.
    - La transmisión en vivo debe correr de forma fluida y natural al ritmo del proxy local sin manipulaciones de tiempo.
-4. **Normalización del manifiesto HLS 24/7 en `proxy.js` (`rewriteHlsManifest`) — Zona Protegida (autorizado 2026-11-13):**
-   - La CDN de los canales 24/7 está replicada en varios orígenes y cada uno devuelve un
-     `#EXT-X-MEDIA-SEQUENCE` con desfases distintos. Se midió en el CDN real la secuencia
+4. **Normalización del manifiesto HLS en `proxy.js` (`rewriteHlsManifest`) — Zona Protegida (autorizado 2026-11-13; ampliado a canales en vivo normales el 2026-11-14 con "modificar TV en vivo"):**
+   - La CDN está replicada en varios orígenes y cada uno devuelve un
+     `#EXT-X-MEDIA-SEQUENCE` con desfases distintos. Se midió en el CDN real de los 24/7 la secuencia
      `66498 → 66455 (-43) → 66502 (+47) → 66507 → 66463 (-44) → 66511 (+48)`.
      El reproductor nativo de webOS interpreta esos saltos como un cambio de posición:
      la imagen **se congela, se adelanta y luego retrocede un segundo**.
-   - **Regla obligatoria:** en los manifiestos 24/7 en vivo, `proxy.js` debe
+   - En los canales en vivo normales del portal se midió el mismo defecto, con saltos de -1:
+     `ON DIRECTV HD` retrocedió 5 veces en 60 s (`41545 → 41546 → 41545 → 41549 → 41552 → 41553 → 41554`)
+     con 0 huecos de segmentos; `DAZN 1 HD` retrocedió 2 veces en 75 s. Los feeds curados
+     (ESPN) no oscilan (0 saltos, 0 huecos), por lo que el defecto es de la réplica del portal.
+   - **Regla obligatoria:** en manifiestos **en vivo** (24/7 y normales), `proxy.js` debe
      **renumerar `#EXT-X-MEDIA-SEQUENCE` de forma monotónica por segmento** (clave = URI
      del segmento, estado persistente `hlsSeqMap` / `hlsSeqNext` por token de proxy), de
      modo que la secuencia entregada **siempre avance** y nunca retroceda por culpa de la
      réplica de la CDN. Un segmento ya visto conserva su número; uno nuevo suma +1.
-   - Se debe entregar además una **ventana corta y estable** con solo los últimos
-     segmentos de la ventana 24/7 (se descartan los más antiguos, mínimo 3), ajustando
+     Si el mismo URI aparece varias veces en el manifiesto (segmentos por `#EXT-X-BYTERANGE`),
+     se distingue por su orden de aparición.
+   - En los **24/7** se debe entregar además una **ventana corta y estable** con solo los últimos
+     segmentos (se descartan los más antiguos, mínimo 3), ajustando
      `#EXT-X-MEDIA-SEQUENCE` y `#EXT-X-DISCONTINUITY-SEQUENCE` al primer segmento servido,
      conservando `#EXT-X-KEY` / `#EXT-X-MAP` si existieran.
-   - Se mantiene `#EXT-X-START:TIME-OFFSET=-15` como refuerzo del arranque cerca del borde en vivo.
-   - **Nunca tocar** con esta lógica los manifiestos VOD, los que llevan `#EXT-X-ENDLIST`
-     ni los canales en vivo normales (deben servirse completos y sin renumerar).
+   - `#EXT-X-START:TIME-OFFSET=-15` se mantiene **solo en 24/7** como refuerzo del arranque cerca del borde en vivo.
+   - Los **canales en vivo normales se sirven completos** (sin recorte de ventana ni `#EXT-X-START`);
+     solo se les renumera la secuencia.
+   - **Nunca tocar** los manifiestos VOD, los que llevan `#EXT-X-ENDLIST` ni la reproducción
+     que no sea en vivo (`state.isLive` falso).
    - El diagnóstico de la app (`HLS:`) debe seguir mostrando segmentos originales/entregados
      y secuencias original/entregada (`segs=6/4 ms=66498/66500 start=...`) para poder
      verificar de un vistazo que la renumeración está activa.

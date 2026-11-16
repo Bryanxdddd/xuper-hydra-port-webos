@@ -1007,8 +1007,8 @@
   box-shadow: inset 0 0 0 4px #e8c65a;
 }
 
-/* Pantalla completa de una sección ("Ver más") */
-#screen-section { background: #0a0d14; }
+/* Pantalla completa de una sección ("Ver más" / Explorador de catálogo estilo APK) */
+#screen-section { background: #0c0f17; }
 .section-back {
   position: absolute;
   display: -webkit-box;
@@ -1017,31 +1017,42 @@
   align-items: center;
   -webkit-box-pack: center;
   justify-content: center;
-  font-size: 30px;
+  font-size: 24px;
+  font-weight: 700;
   color: #ffffff;
-  background: rgba(255, 255, 255, .08);
-  border-radius: 32px;
+  background: rgba(255, 255, 255, .12);
+  border-radius: 10px;
   border: 2px solid transparent;
+  cursor: pointer;
+  z-index: 10;
+  -webkit-transition: all .12s ease;
+  transition: all .12s ease;
 }
 .section-back.is-focused {
   background: #d21525;
+  border-color: #ffffff;
   box-shadow: 0 0 0 3px rgba(255, 255, 255, .9);
+  -webkit-transform: scale(1.04);
+  transform: scale(1.04);
 }
-.section-title {
+.section-breadcrumb {
   position: absolute;
-  font-size: 44px;
-  line-height: 64px;
+  font-size: 30px;
+  line-height: 54px;
+  font-weight: 700;
   color: #ffffff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  z-index: 10;
 }
-.section-count {
+.section-page-info {
   position: absolute;
-  font-size: 24px;
-  line-height: 44px;
-  color: rgba(255, 255, 255, .55);
+  font-size: 22px;
+  line-height: 54px;
+  color: rgba(255, 255, 255, .65);
   text-align: right;
+  z-index: 10;
 }
 .section-page-btn {
   position: absolute;
@@ -1052,29 +1063,171 @@
   -webkit-box-pack: center;
   justify-content: center;
   color: #ffffff;
-  background: rgba(255, 255, 255, .09);
+  background: rgba(255, 255, 255, .12);
   border: 2px solid transparent;
-  border-radius: 7px;
-  font-size: 20px;
+  border-radius: 10px;
+  font-size: 22px;
+  font-weight: 700;
+  cursor: pointer;
+  z-index: 10;
+  -webkit-transition: all .12s ease;
+  transition: all .12s ease;
 }
 .section-page-btn.is-focused {
+  background: #2563eb;
+  border-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, .9);
+  -webkit-transform: scale(1.04);
+  transform: scale(1.04);
+}
+.section-sidebar {
+  position: absolute;
+  background: rgba(14, 18, 27, 0.94);
+  border-radius: 12px;
+  padding: 14px 12px;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 5;
+}
+.section-sidebar-btn {
+  height: 54px;
+  line-height: 54px;
+  padding: 0 20px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #e5e7eb;
+  font-size: 24px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  border: 2px solid transparent;
+}
+.section-sidebar-btn.is-focused {
   background: #d21525;
-  border-color: rgba(255, 255, 255, .95);
+  border-color: rgba(255, 255, 255, 0.95);
+  color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.4);
+}
+.section-sidebar-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+  margin: 10px 6px 12px 6px;
+}
+.section-cat-list {
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+}
+.section-cat-list::-webkit-scrollbar { display: none; }
+.section-cat-item {
+  height: 58px;
+  line-height: 58px;
+  padding: 0 18px;
+  margin-bottom: 6px;
+  border-radius: 10px;
+  color: #9ca3af;
+  font-size: 26px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  border: 2px solid transparent;
+  -webkit-transition: all .1s ease;
+  transition: all .1s ease;
+}
+.section-cat-item.is-selected {
+  background: rgba(59, 130, 246, 0.25);
+  color: #60a5fa;
+  font-weight: 700;
+  font-size: 27px;
+  border-left: 5px solid #3b82f6;
+}
+.section-cat-item.is-focused {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.95);
+  font-weight: 700;
+  font-size: 27px;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.4);
 }
 .section-grid {
   position: absolute;
   overflow-y: auto;
   overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   padding-bottom: 40px;
 }
-.section-grid-content { position: relative; width: 1656px; }
-.section-loading {
-  position: absolute;
-  color: rgba(255, 255, 255, .65);
-  font-size: 20px;
-}
 .section-grid::-webkit-scrollbar { display: none; }
-.section-grid { scrollbar-width: none; -ms-overflow-style: none; }
+.section-explorer-card {
+  border-radius: 8px;
+  overflow: hidden;
+  background: #151922;
+  cursor: pointer;
+  -webkit-transition: -webkit-transform .15s ease, box-shadow .15s ease;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.section-explorer-card .p-img {
+  position: absolute;
+  left: 0; top: 0;
+  width: 100%;
+  height: calc(100% - 56px);
+  object-fit: cover;
+  border-radius: 8px 8px 0 0;
+}
+.section-explorer-card.is-focused {
+  -webkit-transform: scale(1.04);
+  transform: scale(1.04);
+  z-index: 20;
+  box-shadow: 0 0 0 3px #ffffff, 0 8px 24px rgba(0, 0, 0, 0.7);
+}
+.section-explorer-card.is-focused .section-card-title {
+  color: #ffd700;
+}
+.section-badge-score {
+  position: absolute;
+  left: 10px;
+  bottom: 64px;
+  background: #1d4ed8;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  z-index: 3;
+}
+.section-badge-cc {
+  position: absolute;
+  right: 10px;
+  bottom: 64px;
+  background: #d97706;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+  padding: 3px 7px;
+  border-radius: 4px;
+  z-index: 3;
+}
+.section-card-title {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 6px;
+  height: 46px;
+  font-size: 24px;
+  line-height: 46px;
+  font-weight: 700;
+  color: #ffffff;
+  text-align: left;
+  padding: 0 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 /* Riel horizontal de temporadas: ocupa todo el ancho hasta el margen derecho sin recortar temporadas 4+ */
 .detail-seasons-rail {

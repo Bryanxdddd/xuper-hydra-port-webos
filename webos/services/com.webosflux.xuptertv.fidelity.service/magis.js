@@ -208,7 +208,8 @@ function resetSessionAfterLiveFailure() {
     (session.usesSeed = !1),
     (session.at = 0),
     (session.lastError = ""),
-    (liveResolveCache = {}));
+    (liveResolveCache = {}),
+    clearStoredSession());
 }
 var queue = [],
   fastQueue = [],
@@ -619,6 +620,47 @@ function writeJsonSafe(e, r) {
     fs.writeFileSync(e, JSON.stringify(r));
   } catch (e) {}
 }
+/* La sesión del portal se guarda en /tmp para no repetir v3/snToken + v8/active
+   en cada arranque de la app. Esa activación es la parte más lenta del primer
+   "Conectando" (varios reintentos cuando la red del operador filtra el portal),
+   y con esto el primer título abre igual de rápido que el segundo. Se descarta
+   pasados SESSION_FILE_MS o si el portal la rechaza (el código de sesión muerta
+   vuelve a activar limpio). */
+var SESSION_FILE = "/tmp/xuper-session.json",
+  SESSION_FILE_MS = 54e5;
+function saveStoredSession() {
+  if (!session.userId || !session.userToken) return;
+  writeJsonSafe(SESSION_FILE, {
+    sn: session.sn,
+    userId: session.userId,
+    userToken: session.userToken,
+    snToken: session.snToken,
+    at: session.at || Date.now(),
+  });
+}
+function loadStoredSession() {
+  try {
+    var f = JSON.parse(fs.readFileSync(SESSION_FILE, "utf8"));
+    if (!f || !f.userId || !f.userToken || !f.at) return !1;
+    if (Date.now() - Number(f.at) > SESSION_FILE_MS) return !1;
+    ((session.sn = String(f.sn || "")),
+      (session.userId = String(f.userId)),
+      (session.userToken = String(f.userToken)),
+      (session.snToken = String(f.snToken || "")),
+      (session.seed = null),
+      (session.usesSeed = !1),
+      (session.at = Number(f.at) || Date.now()),
+      (session.ready = !0));
+    return !0;
+  } catch (e) {
+    return !1;
+  }
+}
+function clearStoredSession() {
+  try {
+    fs.unlinkSync(SESSION_FILE);
+  } catch (e) {}
+}
 function seedIdentity(e) {
   var r = trim(e && e.userToken);
   return trim(e && e.sn) + "|" + r.slice(-6);
@@ -780,7 +822,8 @@ function adoptSeed(e) {
     (session.usesSeed = !0),
     (session.at = Date.now()),
     session.lastError ||
-      (session.lastError = "activación real no disponible: usando semilla"));
+      (session.lastError = "activación real no disponible: usando semilla"),
+    saveStoredSession());
 }
 function rescueSeed(e, r) {
   e = e || {};
@@ -829,6 +872,13 @@ function rescueSeed(e, r) {
   try {
     var a = JSON.parse(fs.readFileSync(SEED_DEAD_FILE, "utf8"));
     a && "object" == typeof a && (deadSeeds = a);
+  } catch (e) {}
+  /* Sesión guardada del arranque anterior: sin esto cada apertura de la app
+     repetía la activación completa del dispositivo (la demora larga en
+     "Conectando" del primer título). */
+  try {
+    loadStoredSession() &&
+      console.log("[magis] sesión restaurada desde /tmp (arranque rápido)");
   } catch (e) {}
   /* En segundo plano, tras arrancar el servicio y dar tiempo a Luna a
      registrarse, se descarga el pool de semillas publicadas para tenerlo listo
@@ -925,6 +975,7 @@ function ensureSession(e) {
                 (session.usesSeed = !1),
                 (session.at = Date.now()),
                 (session.lastError = ""),
+                saveStoredSession(),
                 s(null, session));
             }
           ));
