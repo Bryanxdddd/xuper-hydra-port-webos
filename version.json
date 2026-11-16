@@ -1,9 +1,9 @@
 {
-    "version": "3.1.6",
+    "version": "3.1.13",
     "name": "XuperTV",
     "minWebos": "1.0.0",
-    "ipkUrl": "https://github.com/cristianco7/XUPER-HYDRA-PORT-WEBOS/releases/download/v3.1.6/com.webosflux.xuptertv.fidelity_3.1.6_all.ipk",
-    "sha256": "0F6C43A30F0FE745AF57C30E98C22FD312E548E8CC87B0CE7405E8DEDC7BF2D6",
-    "changelog": "Versión 3.1.6: más señales de DirecTV y ESPN en la categoría/addon \"DirecTV / ESPN\". Se añaden DSports 2, ON DIRECTV HD (por el portal con licencia) y ESPN Premium Argentina, y se suma ESPN 3 Brasil; todas verificadas de extremo a extremo a través del proxy (manifiesto, variante y segmento TS válido). Las señales previas de la 3.1.5 (ESPN Latinoamérica Colombia y México, ESPN/ESPN2/ESPNU Estados Unidos, ESPN Premium, ESPN Brasil, ESPN 4 Brasil y ESPN 8) siguen igual. Se mantiene la corrección de TV en vivo 24/7 de la 3.1.4.",
-    "releaseDate": "2026-11-14"
+    "ipkUrl": "https://github.com/cristianco7/XUPER-HYDRA-PORT-WEBOS/releases/download/v3.1.13/com.webosflux.xuptertv.fidelity_3.1.13_all.ipk",
+    "sha256": "841EE0E17B5F305E0D94048BAF185D12CE8CE2DAE82247F4D85107826D1F9DEC",
+    "changelog": "Versión 3.1.13: (1) Canales de deportes curados: lista depurada exclusivamente con señales de DirecTV (DSports 1, 2, +, ON DIRECTV HD) y ESPN (ESPN 1 al 7, ESPN Premium y ESPN México 1 al 5), eliminando canales con errores de portal como Bein Sports. (2) Explorador de catálogo completo estilo APK de referencia: botón 'Ver más' habilitado en todos los rieles de Películas, Series, Infantil, Anime y Novelas; apertura de pantalla completa con barra lateral izquierda (Buscar, Filtrar, divisor y categorías oficiales del feed en su orden original), cabecera superior con migas de pan y contador de páginas, cuadrícula de 5 columnas x 2 filas (10 títulos por página con badge azul de nota, badge ámbar CC y títulos grandes y legibles en negrita), botones de paginación ampliados y navegación completa con el control remoto. (3) Navegación de regreso perfeccionada: cierre de modales de filtro sin salir al inicio (protección anti-rebote en tecla Atrás) y retorno directo al Explorador desde el buscador.",
+    "releaseDate": "2026-11-15"
 }

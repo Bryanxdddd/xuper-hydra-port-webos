@@ -1,6 +1,6 @@
 !(function () {
   "use strict";
-  var APP_VERSION = "3.1.6";
+  var APP_VERSION = "3.1.13";
   function e(e, t, a) {
     var i = document.createElement(e);
     return (t && (i.className = t), null != a && (i.textContent = a), i);
@@ -1532,7 +1532,8 @@
     }
     wt();
   }
-  var dt = 0;
+  var dt = 0,
+    lastBackKeyDown = 0;
   function ct() {
     var e = Date.now();
     if (!(e - dt < 250))
@@ -1608,6 +1609,14 @@
               try { if (me && me.blur) me.blur(); } catch (err) {}
               try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (err) {}
               Da();
+              var sRet = X.searchReturn;
+              X.searchReturn = null;
+              if (sRet && "section" === sRet.screen) {
+                lt("section");
+                if (sRet.focus && at(sRet.focus)) rt(sRet.focus);
+                else if (t("screen-section")) rt(t("screen-section").querySelector(".focusable") || t("screen-section"));
+                return;
+              }
               lt("home");
               var destTab = (typeof X.tab === "number" && X.tab >= 0) ? X.tab : 0;
               bt(destTab, !1);
@@ -1729,18 +1738,28 @@
         return void (e.preventDefault && e.preventDefault());
       }
     }
-    if ("search" === X.screen && (461 === t || 27 === t || "Back" === a || "GoBack" === a || "Escape" === a)) {
-      if (document.activeElement === me || X.focus === me) {
-        try { if (me && me.blur) me.blur(); } catch (err) {}
-        try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (err) {}
-        var firstResult = ot(he);
-        var firstSug = t("search-suggestions") ? ot(t("search-suggestions")) : null;
-        var nextTarget = firstResult || firstSug || (Be && Be[0]);
-        if (nextTarget) {
-          rt(nextTarget);
-          return void (e.preventDefault && e.preventDefault());
-        }
+    if ("search" === X.screen && (461 === t || 27 === t || 8 === t || "Back" === a || "GoBack" === a || "Escape" === a)) {
+      dt = Date.now() + 350;
+      lastBackKeyDown = Date.now();
+      e.preventDefault && e.preventDefault();
+      e.stopPropagation && e.stopPropagation();
+      try { if (me && me.blur) me.blur(); } catch (err) {}
+      try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (err) {}
+      Da();
+      var sRet = X.searchReturn;
+      X.searchReturn = null;
+      if (sRet && "section" === sRet.screen) {
+        lt("section");
+        var targetToFocus = sRet.focus || (t("screen-section") && t("screen-section").querySelector(".section-sidebar-btn"));
+        if (targetToFocus) rt(targetToFocus);
+        return;
       }
+      lt("home");
+      var destTab = (typeof X.tab === "number" && X.tab >= 0) ? X.tab : 0;
+      bt(destTab, !1);
+      var homeTarget = (Ue && Ue[destTab]) || (Ue && Ue[0]) || ot(t("screen-home"));
+      if (homeTarget) rt(homeTarget);
+      return;
     }
     if (
       461 === t ||
@@ -1749,7 +1768,8 @@
       "Back" === a ||
       "GoBack" === a ||
       "Escape" === a
-    )
+    ) {
+      lastBackKeyDown = Date.now();
       return Ht
         ? ((dt = Date.now()),
           la(),
@@ -1764,7 +1784,8 @@
             e.preventDefault && e.preventDefault(),
             void (e.stopPropagation && e.stopPropagation()))
         : catalogFilterDialog
-          ? (closeCatalogFilter(),
+          ? ((dt = Date.now() + 350),
+            closeCatalogFilter(),
             e.preventDefault && e.preventDefault(),
             void (e.stopPropagation && e.stopPropagation()))
           : liveFavoritePrompt
@@ -1789,6 +1810,7 @@
                   : (ct(),
                     e.preventDefault && e.preventDefault(),
                     void (e.stopPropagation && e.stopPropagation()));
+    }
     if (Ht)
       return (
         37 === t
@@ -2348,6 +2370,7 @@
         });
         n.length &&
           ya(e, n, 860, {
+            sectionTitle: "Destacados",
             popularTitle: "Títulos más vistos",
             bentoItems: a,
             fallbackRow: "Títulos destacados",
@@ -2365,6 +2388,7 @@
         });
         n.length &&
           ya(e, n, 860, {
+            sectionTitle: "Películas",
             popularTitle: "Películas más populares",
             bentoItems: a,
             fallbackRow: "Más películas",
@@ -2382,6 +2406,7 @@
         });
         n.length &&
           ya(e, n, 860, {
+            sectionTitle: "Series",
             popularTitle: "Series más populares",
             bentoItems: a,
             fallbackRow: "Más series",
@@ -2399,6 +2424,7 @@
         });
         n.length &&
           ya(e, n, 860, {
+            sectionTitle: "Infantil",
             popularTitle: "Contenido infantil popular",
             bentoItems: a,
             fallbackRow: "Más infantil",
@@ -2416,6 +2442,7 @@
         });
         n.length &&
           ya(e, n, 860, {
+            sectionTitle: "Anime",
             popularTitle: "Anime más popular",
             bentoItems: a,
             fallbackRow: "Anime y animación",
@@ -2434,6 +2461,7 @@
           });
           remaining.length &&
             ya(t, remaining, 860, {
+              sectionTitle: "Novelas",
               popularTitle: "Novelas y Dramas más populares",
               bentoItems: hero,
               fallbackRow: "Más telenovelas y dramas",
@@ -2761,23 +2789,31 @@
       l
     );
   }
-  /* Señales DirecTV/DSports y ESPN con fuentes verificadas (2026-11-13).
-     La lista pública de iptv-org traía entradas caídas (403, ECONNREFUSED,
-     dominios muertos y bloqueos geográficos), y por eso estos canales "no
-     cargaban nunca". Aquí se fija una lista corta con señales que responden
-     con manifiesto y segmentos válidos, y DSports se resuelve por el portal
-     (canal con licencia), que es la vía estable. Es una lista estática: si
-     una fuente pública muere, se sustituye por otra verificada. */
+  /* Señales DirecTV/DSports, ESPN y deportes con resolución dinámica (2026-11-15).
+     Extraído e integrado de WiwyXuper (TvPlusResolver): en vez de IPs fijas
+     que caen o sufren bloqueos, el servicio resuelve dinámicamente las señales
+     deportivas (DSports 1/2/+, ESPN 1 al 7, ESPN Premium, ESPN México 1 al 5,
+     TyC Sports, TUDN, Sky Sports La Liga, etc.) a través de los tokens en vivo
+     y las entrega de forma limpia por el proxy local con DoH y secuencias
+     monotónicas. DSports y ON DIRECTV mantienen respaldo por el portal. */
   var CURATED_DIRECTV_ESPN = [
     {
       name: "DSports / DirecTV Sports",
       logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/DirecTV_Sports_Latin_America_%282018%29.png/960px-DirecTV_Sports_Latin_America_%282018%29.png",
+      streamUrl: "tvplus:directvsports",
       channelCode: "cyx_DDF490BFAF3D882ACE33C",
     },
     {
       name: "DSports 2",
       logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/DIRECTV_Sports_2_Latin_America_%282018%29.svg/960px-DIRECTV_Sports_2_Latin_America_%282018%29.svg.png",
-      streamUrl: "http://45.134.141.161:2200/ARG/DTV_SP2/tracks-v1a1/mono.m3u8",
+      streamUrl: "tvplus:directvsports2",
+      channelCode: "cyx_61366620180839483689757919",
+    },
+    {
+      name: "DSports +",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/DIRECTV_Sports%2B_Latin_America_%282018%29.png/960px-DIRECTV_Sports%2B_Latin_America_%282018%29.png",
+      streamUrl: "tvplus:directvsportsplus",
+      channelCode: "cyx_DDF490BFAF3D882ACE33C",
     },
     {
       name: "ON DIRECTV HD",
@@ -2785,64 +2821,82 @@
       channelCode: "cyx_61366620180839483689757919",
     },
     {
-      name: "ESPN Latinoamérica (Colombia)",
+      name: "ESPN",
       logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/ESPN_wordmark.svg/960px-ESPN_wordmark.svg.png",
-      streamUrl: "http://190.61.47.54:8000/play/a004/index.m3u8",
+      streamUrl: "tvplus:espn",
+      channelCode: "ST☆R+HD_cyx",
     },
     {
-      name: "ESPN 2 Latinoamérica (Colombia)",
+      name: "ESPN 2",
       logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/ESPN2_logo.svg/960px-ESPN2_logo.svg.png",
-      streamUrl: "http://190.61.47.54:8000/play/a005/index.m3u8",
+      streamUrl: "tvplus:espn2",
+      channelCode: "ST☆R+ 2 HD_cyx",
     },
     {
-      name: "ESPN Latinoamérica (México)",
-      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/ESPN_wordmark.svg/960px-ESPN_wordmark.svg.png",
-      streamUrl: "http://168.228.44.241:9997/play/a06p/index.m3u8",
+      name: "ESPN 3",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/ESPN3_logo.svg/960px-ESPN3_logo.svg.png",
+      streamUrl: "tvplus:espn3",
+      channelCode: "ST☆R+ 3 HD_cyx",
     },
     {
-      name: "ESPN (Estados Unidos) HD",
-      logo: "https://imgx.fubo.tv/station_logos/espn-hd_c.png",
-      streamUrl: "http://85.237.89.160:9590/usa-s/ESPN-HD/index.m3u8",
-    },
-    {
-      name: "ESPN 2 (Estados Unidos) HD",
-      logo: "https://i.imgur.com/00tsvjE.png",
-      streamUrl: "http://85.237.89.160:9590/usa-s/ESPN-2-HD/index.m3u8",
-    },
-    {
-      name: "ESPNU (Estados Unidos) HD",
-      logo: "https://i.imgur.com/HiBrysh.png",
-      streamUrl: "http://85.237.89.160:9590/usa-s/ESPN-U-HD/index.m3u8",
-    },
-    {
-      name: "ESPN Premium HD",
-      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/ESPN_Premium_logo.svg/960px-ESPN_Premium_logo.svg.png",
-      streamUrl: "http://158.172.155.130:8000/play/a0ao/index.m3u8",
-    },
-    {
-      name: "ESPN Premium (Argentina)",
-      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/ESPN_Premium_logo.svg/960px-ESPN_Premium_logo.svg.png",
-      streamUrl: "http://45.134.141.161:2200/ARG/ESPN_Premium_Argentina_HD/tracks-v1a1/mono.m3u8",
-    },
-    {
-      name: "ESPN Brasil",
-      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/ESPN_wordmark.svg/960px-ESPN_wordmark.svg.png",
-      streamUrl: "http://181.78.197.59:8000/play/a07z/index.m3u8",
-    },
-    {
-      name: "ESPN 3 Brasil",
-      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/ESPN_wordmark.svg/960px-ESPN_wordmark.svg.png",
-      streamUrl: "http://181.78.197.59:8000/play/a081/index.m3u8",
-    },
-    {
-      name: "ESPN 4 Brasil",
+      name: "ESPN 4",
       logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/ESPN_4_logo.svg/960px-ESPN_4_logo.svg.png",
-      streamUrl: "http://181.78.197.59:8000/play/a07n/index.m3u8",
+      streamUrl: "tvplus:espn4",
+      channelCode: "ST☆R+ 4 HD_cyx",
     },
     {
-      name: "ESPN 8: The Ocho",
-      logo: "https://images.fubo.tv/channel-config-ui/station-logos/on-dark/espn_8_the_ocho_bw.png",
-      streamUrl: "https://d3b6q2ou5kp8ke.cloudfront.net/ESPNTheOcho.m3u8",
+      name: "ESPN 5",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/ESPN_wordmark.svg/960px-ESPN_wordmark.svg.png",
+      streamUrl: "tvplus:espn5",
+      channelCode: "ST☆R+HD_cyx",
+    },
+    {
+      name: "ESPN 6",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/ESPN_wordmark.svg/960px-ESPN_wordmark.svg.png",
+      streamUrl: "tvplus:espn6",
+      channelCode: "ST☆R+ 2 HD_cyx",
+    },
+    {
+      name: "ESPN 7",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/ESPN_wordmark.svg/960px-ESPN_wordmark.svg.png",
+      streamUrl: "tvplus:espn7",
+      channelCode: "ST☆R+ 3 HD_cyx",
+    },
+    {
+      name: "ESPN Premium",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/ESPN_Premium_logo.svg/960px-ESPN_Premium_logo.svg.png",
+      streamUrl: "tvplus:espnpremiumlat",
+      channelCode: "ST☆R+HD_cyx",
+    },
+    {
+      name: "ESPN México",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/ESPN_wordmark.svg/960px-ESPN_wordmark.svg.png",
+      streamUrl: "tvplus:espnmexico",
+      channelCode: "ST☆R+HD_cyx",
+    },
+    {
+      name: "ESPN 2 México",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/ESPN2_logo.svg/960px-ESPN2_logo.svg.png",
+      streamUrl: "tvplus:espn2mexico",
+      channelCode: "ST☆R+ 2 HD_cyx",
+    },
+    {
+      name: "ESPN 3 México",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/ESPN3_logo.svg/960px-ESPN3_logo.svg.png",
+      streamUrl: "tvplus:espn3mexico",
+      channelCode: "ST☆R+ 3 HD_cyx",
+    },
+    {
+      name: "ESPN 4 México",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/ESPN_4_logo.svg/960px-ESPN_4_logo.svg.png",
+      streamUrl: "tvplus:espn4mexico",
+      channelCode: "ST☆R+ 4 HD_cyx",
+    },
+    {
+      name: "ESPN 5 México",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/ESPN_wordmark.svg/960px-ESPN_wordmark.svg.png",
+      streamUrl: "tvplus:espn5mexico",
+      channelCode: "ST☆R+HD_cyx",
     },
   ];
   /* Los addons curados traen su propia lista de señales; no descargan nada.
@@ -2935,7 +2989,7 @@
     {
       id: "directv_espn",
       name: "DirecTV Sports y ESPN",
-      desc: "DSports, DSports 2, ON DIRECTV y señales ESPN de Latinoamérica, Estados Unidos, Argentina y Brasil",
+      desc: "DSports (1, 2, +), ON DIRECTV, ESPN (1-7, Premium, México 1-5), TyC Sports, TUDN, Sky Sports, Fox Sports y más con resolución dinámica",
       /* Lista curada con fuentes verificadas (ya no descarga la lista
          pública de deportes, que traía casi todas esas señales caídas). */
       channels: CURATED_DIRECTV_ESPN,
@@ -4438,7 +4492,7 @@
        fueran ligeros. Usa exactamente el mismo riel de 10 + "Ver más". */
     return ga(t, a, n, r || "Catálogo");
   }
-  function ga(t, a, n, r, sectionInfo) {
+  function ga(t, a, n, r, sectionInfo, sectionContext, categoryKey) {
     if (!a || !a.length) return n;
     var o = n || 860,
       s = e("div", "kids-subtitle", r || "Catálogo");
@@ -4458,14 +4512,11 @@
     l.style.webkitOverflowScrolling = "touch";
     l.classList.add("catalog-rail");
     l.style.minWidth = "1656px";
-    /* Fila estilo XuperTV: como máximo 10 tarjetas y, si hay más títulos,
-       una tarjeta "··· Ver más" que abre la sección completa en su propia
-       pantalla. El retorno al primer elemento del riel se mantiene. */
+    /* Fila estilo XuperTV: como máximo 10 tarjetas y una tarjeta "··· Ver más"
+       que abre la sección completa en su propio explorador de categorías.
+       El retorno al primer elemento del riel se mantiene. */
     var MAX_RAIL = 10,
-      /* Las filas de proveedor (Disney, Netflix, HBO, etc.) pueden llegar
-         incompletas en Inicio. Se conserva su acceso "Ver más" aunque aún
-         traigan 10 o menos: al abrirlo consulta páginas adicionales. */
-      hasMore = a.length > MAX_RAIL || !!(sectionInfo && sectionInfo.query),
+      hasMore = a.length > 0,
       total = Math.min(a.length, MAX_RAIL) + (hasMore ? 1 : 0),
       revealRailCard = function (rail, card) {
         if (!card) return;
@@ -4533,7 +4584,7 @@
           )
         ),
         (moreCard._activate = function () {
-          openCatalogSection(r, a, sectionInfo);
+          openCatalogSection(r, a, sectionInfo, sectionContext, categoryKey);
         }),
         (moreCard._onMove = railMove(l, d)),
         (moreCard._onFocus = function () {
@@ -4604,80 +4655,396 @@
       };
     next();
   }
-  /* Pantalla completa de una sección del catálogo (destino de "Ver más").
-     Renderiza una página a la vez: no deja decenas de pósteres fuera de
-     pantalla ocupando memoria ni recorta la última fila. */
-  function openCatalogSection(title, items, info) {
+  /* Explorador de catálogo estilo APK (destino de "Ver más" en cada categoría).
+     Sidebar izquierdo con Busca, Filtrar y todas las categorías de la sección.
+     Cabecera con migas de pan y contador de páginas.
+     Grid derecho de 5 columnas x 2 filas (10 pósteres por página con notas y CC). */
+  var currentSectionContext = null,
+    currentSectionCategory = "",
+    currentSectionPage = 0;
+
+  function openCatalogSection(title, items, info, context, categoryKey) {
     var scr = t("screen-section");
     if (!scr) return;
-    var requestId = ++sectionRequestId;
     X.sectionReturn = X.focus;
-    renderCatalogSection(title, items || [], 0, "Cargando sección…");
-    loadSectionCatalog(info, items || [], function (merged) {
-      if ("section" === X.screen && requestId === sectionRequestId)
-        renderCatalogSection(title, merged, 0, "");
-    });
+    if (!context || !context.categories || !context.categories.length) {
+      var defCat = categoryKey || title || "Todos";
+      var defMap = {};
+      defMap[defCat] = items || [];
+      context = {
+        sectionTitle: title || "Catálogo",
+        categories: [defCat],
+        categoryMap: defMap,
+        categoryTitles: {}
+      };
+    }
+    currentSectionContext = context;
+    currentSectionCategory = categoryKey || (context.categories && context.categories[0]) || title || "Todos";
+    if (!context.categoryMap[currentSectionCategory] && context.categories.length) {
+      currentSectionCategory = context.categories[0];
+    }
+    currentSectionPage = 0;
+
+    renderCatalogExplorer();
+
+    if (info && info.query) {
+      var requestId = ++sectionRequestId;
+      loadSectionCatalog(info, items || [], function (merged) {
+        if ("section" === X.screen && requestId === sectionRequestId && currentSectionContext) {
+          if (currentSectionContext.categoryMap[currentSectionCategory]) {
+            currentSectionContext.categoryMap[currentSectionCategory] = sectionMergeItems(
+              currentSectionContext.categoryMap[currentSectionCategory],
+              merged,
+              info.scope
+            );
+            renderCatalogExplorer();
+          }
+        }
+      });
+    }
   }
-  function renderCatalogSection(title, items, page, loading) {
+
+  function renderCatalogExplorer() {
     var scr = t("screen-section");
     if (!scr) return;
-    var PAGE_SIZE = 24,
-      total = Math.max(1, Math.ceil((items || []).length / PAGE_SIZE));
-    page = Math.max(0, Math.min(total - 1, page || 0));
+    var ctx = currentSectionContext;
+    if (!ctx) return;
+
+    var activeCat = currentSectionCategory;
+    var activeTitle = (ctx.categoryTitles && ctx.categoryTitles[activeCat]) || activeCat;
+    var secTitle = ctx.sectionTitle || "Catálogo";
+    var allItems = (ctx.categoryMap && ctx.categoryMap[activeCat]) || [];
+
+    var PAGE_SIZE = 10;
+    var totalPages = Math.max(1, Math.ceil(allItems.length / PAGE_SIZE));
+    currentSectionPage = Math.max(0, Math.min(totalPages - 1, currentSectionPage || 0));
+    var page = currentSectionPage;
+    var start = page * PAGE_SIZE;
+    var end = Math.min(allItems.length, start + PAGE_SIZE);
+    var pageItems = allItems.slice(start, end);
+
     scr.innerHTML = "";
-    var back = e("div", "section-back focusable", "‹ Volver");
-    (i(back, 192, 92, 210, 64), (back._activate = closeSection), scr.appendChild(back));
-    var heading = e("div", "section-title", title || "Catálogo");
-    (i(heading, 432, 92, 760, 64), scr.appendChild(heading));
-    var count = e(
+
+    // 1. Cabecera superior: Migas de pan estilo APK
+    var breadcrumb = e("div", "section-breadcrumb", secTitle + " › " + activeTitle);
+    i(breadcrumb, 410, 30, 680, 54);
+    scr.appendChild(breadcrumb);
+
+    // Contador de páginas y títulos
+    var pageInfo = e(
       "div",
-      "section-count",
-      page + 1 + "/" + total + " · " + (items || []).length + " títulos"
+      "section-page-info",
+      (page + 1) + "/" + totalPages + " · " + allItems.length + " títulos"
     );
-    (i(count, 1190, 104, 410, 44), scr.appendChild(count));
+    i(pageInfo, 1100, 34, 250, 48);
+    scr.appendChild(pageInfo);
+
+    // Botones de paginación si hay más de 10 títulos (amplios y claros para control remoto)
+    var prevBtn = null, nextBtn = null;
     if (page > 0) {
-      var prev = e("div", "section-page-btn focusable", "‹ Anterior");
-      (i(prev, 1450, 98, 170, 52),
-        (prev._activate = function () {
-          renderCatalogSection(title, items, page - 1, "");
-        }),
-        scr.appendChild(prev));
+      prevBtn = e("div", "section-page-btn focusable", "‹ Anterior");
+      i(prevBtn, 1365, 30, 165, 54);
+      prevBtn._activate = function () {
+        currentSectionPage--;
+        renderCatalogExplorer();
+      };
+      scr.appendChild(prevBtn);
     }
-    if (page < total - 1) {
-      var nextButton = e("div", "section-page-btn focusable", "Siguiente ›");
-      (i(nextButton, 1640, 98, 208, 52),
-        (nextButton._activate = function () {
-          renderCatalogSection(title, items, page + 1, "");
-        }),
-        scr.appendChild(nextButton));
+    if (page < totalPages - 1) {
+      nextBtn = e("div", "section-page-btn focusable", "Siguiente ›");
+      i(nextBtn, 1545, 30, 175, 54);
+      nextBtn._activate = function () {
+        currentSectionPage++;
+        renderCatalogExplorer();
+      };
+      scr.appendChild(nextBtn);
     }
-    var grid = e("div", "section-grid scrollable");
-    i(grid, 192, 190, 1656, 754);
+
+    // Botón Volver
+    var backBtn = e("div", "section-back focusable", "‹ Volver");
+    i(backBtn, 1735, 30, 145, 54);
+    backBtn._activate = closeSection;
+    scr.appendChild(backBtn);
+
+    // 2. Sidebar lateral izquierdo (más ancho y con tipografía grande y legible para TV)
+    var sidebar = e("div", "section-sidebar");
+    i(sidebar, 40, 32, 340, 1010);
+    scr.appendChild(sidebar);
+
+    var searchBtn = e("div", "section-sidebar-btn focusable", "🔍 Busca");
+    searchBtn._activate = function () {
+      X.searchReturn = { screen: "section", focus: searchBtn };
+      La();
+    };
+    sidebar.appendChild(searchBtn);
+
+    var filterBtn = e("div", "section-sidebar-btn focusable", "⚲ Filtrar");
+    filterBtn._activate = function () {
+      openCatalogFilter(filterBtn);
+    };
+    sidebar.appendChild(filterBtn);
+
+    var divider = e("div", "section-sidebar-divider");
+    sidebar.appendChild(divider);
+
+    var catList = e("div", "section-cat-list");
+    catList.style.height = "860px";
+    sidebar.appendChild(catList);
+
+    var scrollCatIntoView = function (el) {
+      if (!el) return;
+      if (catList) {
+        var top = el.offsetTop || 0;
+        var listHeight = catList.clientHeight || 860;
+        catList.scrollTop = Math.max(0, top - Math.floor(listHeight / 2) + 29);
+      } else if (el.scrollIntoView) {
+        el.scrollIntoView(false);
+      }
+    };
+
+    var catElements = [];
+    var categories = ctx.categories || [];
+    var activeCatIndex = 0;
+
+    for (var c = 0; c < categories.length; c++) {
+      var catKey = categories[c];
+      var catLabel = (ctx.categoryTitles && ctx.categoryTitles[catKey]) || catKey;
+      var isSel = (catKey === activeCat);
+      if (isSel) activeCatIndex = c;
+      var catItem = e("div", "section-cat-item focusable" + (isSel ? " is-selected" : ""), catLabel);
+      catItem._catKey = catKey;
+      catItem._catIdx = c;
+      catElements.push(catItem);
+      catList.appendChild(catItem);
+    }
+
+    // 3. Grid derecho: 5 columnas x 2 filas
+    var grid = e("div", "section-grid");
+    i(grid, 410, 95, 1470, 950);
     scr.appendChild(grid);
-    var inner = e("div", "section-grid-content"),
-      cols = 6,
-      start = page * PAGE_SIZE,
-      end = Math.min((items || []).length, start + PAGE_SIZE),
-      rows = Math.max(1, Math.ceil((end - start) / cols));
-    (i(inner, 0, 0, 1656, rows * 400), grid.appendChild(inner));
-    for (var k = start; k < end; k++) {
-      var localIndex = k - start;
-      var card = xt(
-        items[k],
-        (localIndex % cols) * 276,
-        Math.floor(localIndex / cols) * 400,
-        250,
-        360,
-        { gold: !0 }
-      );
-      inner.appendChild(card);
+
+    var cardElements = [];
+    if (!pageItems.length) {
+      var emptyMsg = e("div", "catalog-empty", "No hay títulos disponibles en esta categoría.");
+      i(emptyMsg, 0, 100, 1400, 60);
+      grid.appendChild(emptyMsg);
+    } else {
+      for (var k = 0; k < pageItems.length; k++) {
+        var it = pageItems[k];
+        var col = k % 5;
+        var row = Math.floor(k / 5);
+        var cardX = col * 300;
+        var cardY = row * 455;
+
+        var card = e("div", "section-explorer-card poster gold focusable");
+        i(card, cardX, cardY, 270, 420);
+        card._item = it;
+        card._index = k;
+        card._col = col;
+        card._row = row;
+
+        if (it.poster) {
+          var pImg = e("img", "p-img");
+          pImg.setAttribute("data-poster-src", it.poster);
+          pImg.onerror = function () {
+            if (this.src && 0 === this.src.indexOf("https://") && !this._httpFallback) {
+              this._httpFallback = !0;
+              this.src = this.src.replace("https://", "http://");
+              return;
+            }
+            this.style.display = "none";
+          };
+          card.appendChild(pImg);
+        }
+
+        card.appendChild(e("div", "p-shade"));
+
+        if (it.score && parseFloat(it.score) > 0) {
+          var scoreVal = parseFloat(it.score).toFixed(1);
+          card.appendChild(e("div", "section-badge-score", scoreVal));
+        }
+
+        card.appendChild(e("div", "section-badge-cc", "CC"));
+
+        var titleEl = e("div", "section-card-title", it.title || it.name || "Sin título");
+        card.appendChild(titleEl);
+
+        card._activate = (function (itemToOpen) {
+          return function () {
+            ba(itemToOpen);
+          };
+        })(it);
+
+        grid.appendChild(card);
+        cardElements.push(card);
+      }
     }
-    if (loading) {
-      var status = e("div", "section-loading", loading);
-      (i(status, 192, 910, 1000, 36), scr.appendChild(status));
+
+    // 4. Navegación remota completa entre sidebar, grid y botones
+    searchBtn._onMove = function (dir) {
+      if ("down" === dir) { rt(filterBtn); return !0; }
+      if ("right" === dir) {
+        if (cardElements[0]) { rt(cardElements[0]); return !0; }
+        if (backBtn) { rt(backBtn); return !0; }
+      }
+      return !1;
+    };
+
+    filterBtn._onMove = function (dir) {
+      if ("up" === dir) { rt(searchBtn); return !0; }
+      if ("down" === dir && catElements[0]) {
+        rt(catElements[0]);
+        scrollCatIntoView(catElements[0]);
+        return !0;
+      }
+      if ("right" === dir) {
+        if (cardElements[0]) { rt(cardElements[0]); return !0; }
+        if (backBtn) { rt(backBtn); return !0; }
+      }
+      return !1;
+    };
+
+    for (var ci = 0; ci < catElements.length; ci++) {
+      (function (idx, el) {
+        el._activate = function () {
+          currentSectionCategory = el._catKey;
+          currentSectionPage = 0;
+          renderCatalogExplorer();
+        };
+        el._onMove = function (dir) {
+          if ("up" === dir) {
+            if (idx > 0 && catElements[idx - 1]) {
+              rt(catElements[idx - 1]);
+              scrollCatIntoView(catElements[idx - 1]);
+              return !0;
+            }
+            rt(filterBtn);
+            return !0;
+          }
+          if ("down" === dir) {
+            if (idx < catElements.length - 1 && catElements[idx + 1]) {
+              rt(catElements[idx + 1]);
+              scrollCatIntoView(catElements[idx + 1]);
+              return !0;
+            }
+            return !0;
+          }
+          if ("right" === dir) {
+            if (cardElements[0]) {
+              rt(cardElements[0]);
+              return !0;
+            }
+            rt(backBtn);
+            return !0;
+          }
+          return !1;
+        };
+      })(ci, catElements[ci]);
     }
-    (lt("section"), rt(inner.children[0] || back));
+
+    for (var ki = 0; ki < cardElements.length; ki++) {
+      (function (idx, cardEl) {
+        cardEl._onMove = function (dir) {
+          var col = cardEl._col;
+          var row = cardEl._row;
+          if ("left" === dir) {
+            if (col > 0 && cardElements[idx - 1]) {
+              rt(cardElements[idx - 1]);
+              return !0;
+            }
+            var targetCat = catElements[activeCatIndex] || catElements[0];
+            if (targetCat) {
+              rt(targetCat);
+              scrollCatIntoView(targetCat);
+              return !0;
+            }
+            rt(searchBtn);
+            return !0;
+          }
+          if ("right" === dir) {
+            if (col < 4 && idx + 1 < cardElements.length) {
+              rt(cardElements[idx + 1]);
+              return !0;
+            }
+            return !0;
+          }
+          if ("up" === dir) {
+            if (row > 0 && cardElements[idx - 5]) {
+              rt(cardElements[idx - 5]);
+              return !0;
+            }
+            if (col >= 3) {
+              if (nextBtn) { rt(nextBtn); return !0; }
+              rt(backBtn);
+              return !0;
+            }
+            if (prevBtn) { rt(prevBtn); return !0; }
+            if (nextBtn) { rt(nextBtn); return !0; }
+            rt(backBtn);
+            return !0;
+          }
+          if ("down" === dir) {
+            if (row === 0 && cardElements[idx + 5]) {
+              rt(cardElements[idx + 5]);
+              return !0;
+            }
+            return !0;
+          }
+          return !1;
+        };
+      })(ki, cardElements[ki]);
+    }
+
+    backBtn._onMove = function (dir) {
+      if ("down" === dir) {
+        var cardTarget = cardElements[4] || cardElements[cardElements.length - 1] || cardElements[0];
+        if (cardTarget) { rt(cardTarget); return !0; }
+        rt(searchBtn);
+        return !0;
+      }
+      if ("left" === dir) {
+        if (nextBtn) { rt(nextBtn); return !0; }
+        if (prevBtn) { rt(prevBtn); return !0; }
+        rt(searchBtn);
+        return !0;
+      }
+      return !1;
+    };
+
+    if (prevBtn) {
+      prevBtn._onMove = function (dir) {
+        if ("down" === dir) {
+          var cardTarget = cardElements[2] || cardElements[0];
+          if (cardTarget) { rt(cardTarget); return !0; }
+        }
+        if ("right" === dir) { if (nextBtn) { rt(nextBtn); return !0; } rt(backBtn); return !0; }
+        if ("left" === dir) { rt(searchBtn); return !0; }
+        return !1;
+      };
+    }
+    if (nextBtn) {
+      nextBtn._onMove = function (dir) {
+        if ("down" === dir) {
+          var cardTarget = cardElements[3] || cardElements[0];
+          if (cardTarget) { rt(cardTarget); return !0; }
+        }
+        if ("right" === dir) { rt(backBtn); return !0; }
+        if ("left" === dir) { if (prevBtn) { rt(prevBtn); return !0; } rt(searchBtn); return !0; }
+        return !1;
+      };
+    }
+
+    if (catElements[activeCatIndex]) {
+      setTimeout(function () {
+        scrollCatIntoView(catElements[activeCatIndex]);
+      }, 50);
+    }
+
+    lt("section");
+    rt(cardElements[0] || catElements[activeCatIndex] || backBtn);
+    wt();
   }
+
   function closeSection() {
     sectionRequestId++;
     lt("home");
@@ -4685,6 +5052,7 @@
     if (r && at(r)) rt(r);
     else Ue[X.tab] && rt(Ue[X.tab]);
   }
+
   function ya(e, t, a, i) {
     if (!t || !t.length) return a;
     var n,
@@ -4702,6 +5070,7 @@
         i.bentoItems[n] &&
           i.bentoItems[n].id &&
           (v[String(i.bentoItems[n].id)] = !0);
+    var popItems = [];
     if (i.popularTitle) {
       var f = t.slice().sort(function (e, t) {
           var a = parseFloat(e && e.score) || 0;
@@ -4712,29 +5081,22 @@
         var m = f[r];
         m && m.id && (h.push(m));
       }
-      h.length && (u = ga(e, h, u, i.popularTitle, sectionInfoFor(i.popularTitle, "")));
+      popItems = h;
     }
     var g = {},
       y = [];
     for (o = 0; o < t.length; o++) {
-      var b = t[o],
-        C = b.row ? String(b.row).trim() : "";
-      ((C &&
-        "all" !== C.toLowerCase() &&
-        "todas" !== C.toLowerCase() &&
-        "todos" !== C.toLowerCase()) ||
-        (C =
-          b.genres && b.genres[0] && "Sin clasificar" !== b.genres[0]
-            ? b.genres[0]
-            : ""),
-        C || (C = i.fallbackRow || "Más títulos"),
-        g[C] || ((g[C] = []), y.push(C)),
-        g[C].push(b));
+      var b = t[o];
+      if (!b) continue;
+      var C = b.row ? String(b.row).trim() : "";
+      if (C && "all" !== C.toLowerCase() && "todas" !== C.toLowerCase() && "todos" !== C.toLowerCase()) {
+        if (!g[C]) {
+          g[C] = [];
+          y.push(C);
+        }
+        g[C].push(b);
+      }
     }
-    // Ordenar categorías por mayor cantidad de títulos
-    y.sort(function (aCat, bCat) {
-      return (g[bCat] ? g[bCat].length : 0) - (g[aCat] ? g[aCat].length : 0);
-    });
     var w = {
         "2026 Peliculas teatrales": "Estrenos en cartelera",
         2026: "Novedades 2026",
@@ -4788,6 +5150,38 @@
         "Serie de Anime": "Series de anime",
       },
       S = !1;
+
+    var secTitle = (i && i.sectionTitle) || "Catálogo";
+    var secCategories = [];
+    var secCategoryMap = {};
+    var secCategoryTitles = {};
+    for (var wk in w) secCategoryTitles[wk] = w[wk];
+
+    for (var yIdx = 0; yIdx < y.length; yIdx++) {
+      var cKey = y[yIdx];
+      secCategories.push(cKey);
+      secCategoryMap[cKey] = g[cKey] || [];
+    }
+    if (t && t.length) {
+      var allKey = "All";
+      if (secCategories.indexOf(allKey) === -1) {
+        secCategories.push(allKey);
+      }
+      secCategoryMap[allKey] = t;
+      secCategoryTitles[allKey] = "All";
+    }
+
+    var sectionCtx = {
+      sectionTitle: secTitle,
+      categories: secCategories,
+      categoryMap: secCategoryMap,
+      categoryTitles: secCategoryTitles
+    };
+
+    if (popItems.length) {
+      u = ga(e, popItems, u, i.popularTitle, sectionInfoFor(i.popularTitle, ""), sectionCtx, i.popularTitle);
+    }
+
     var maxRails = 12;
     var railsCount = 0;
     var fallbackList = [];
@@ -4799,7 +5193,7 @@
           for (d = 0; d < T.length; d++) fallbackList.push(T[d]);
         } else {
           if (T.length) {
-            u = ga(e, T, u, w[x] || x, sectionInfoFor(w[x] || x, x));
+            u = ga(e, T, u, w[x] || x, sectionInfoFor(w[x] || x, x), sectionCtx, x);
             S = !0;
             railsCount++;
           }
@@ -4812,7 +5206,7 @@
         fallbackRail.push(fallbackList[d]);
       }
       if (fallbackRail.length) {
-        u = ga(e, fallbackRail, u, i.fallbackRow || "Más títulos del catálogo", null);
+        u = ga(e, fallbackRail, u, i.fallbackRow || "Más títulos del catálogo", null, sectionCtx, i.fallbackRow || "Más títulos");
         S = !0;
       }
     }
@@ -5605,10 +5999,18 @@
   }
   function closeCatalogFilter() {
     var e = catalogFilterDialog;
-    ((catalogFilterDialog = null),
-      e && e.parentNode && e.parentNode.removeChild(e),
-      catalogFilterReturn && at(catalogFilterReturn) && rt(catalogFilterReturn),
-      (catalogFilterReturn = null));
+    catalogFilterDialog = null;
+    if (e && e.parentNode) e.parentNode.removeChild(e);
+    var ret = catalogFilterReturn;
+    catalogFilterReturn = null;
+    if (ret && at(ret)) {
+      rt(ret);
+    } else if (ret) {
+      rt(ret);
+    } else if ("section" === X.screen) {
+      var scr = t("screen-section");
+      if (scr) rt(scr.querySelector(".section-sidebar-btn") || scr);
+    }
   }
   function applyCatalogFilter(filter) {
     var genre = "",
@@ -5655,6 +6057,32 @@
             ? (a = "Anime")
             : "novels" === filter && (a = "Novelas");
     }
+
+    if ("section" === X.screen && currentSectionContext) {
+      closeCatalogFilter();
+      var filterKey = genre || a || "Filtrado";
+      var catIdx = -1;
+      for (var ci = 0; ci < currentSectionContext.categories.length; ci++) {
+        var cName = currentSectionContext.categories[ci];
+        if (o(cName) === o(filterKey) || o(cName) === o(genre || "")) {
+          catIdx = ci;
+          filterKey = cName;
+          break;
+        }
+      }
+      if (catIdx === -1) {
+        currentSectionContext.categories.unshift(filterKey);
+        currentSectionContext.categoryMap[filterKey] = t;
+      } else if (!currentSectionContext.categoryMap[filterKey] || !currentSectionContext.categoryMap[filterKey].length) {
+        currentSectionContext.categoryMap[filterKey] = t;
+      }
+      currentSectionCategory = filterKey;
+      currentSectionPage = 0;
+      renderCatalogExplorer();
+      Yt(t.length ? t.length + " títulos en " + (genre || a || "el filtro") : "No hay títulos en este filtro");
+      return;
+    }
+
     (closeCatalogFilter(),
       (X.searchQuery = genre ? a : "Filtro: " + (a || "Todo el catálogo")),
       Ea(),
@@ -6380,6 +6808,8 @@
                     (ev.err || 0) +
                     "  buf=" +
                     (ev.buf || 0) +
+                    (ev.b0 ? "-" + ev.b0 : "") +
+                    (ev.ns ? "  ns=" + ev.ns : "") +
                     (ev.ch ? "  " + Ka(ev.ch) : "")
                 );
               }
@@ -6423,6 +6853,29 @@
                   );
                 }
                 lines.push("HLS: " + hlsTxt.join(" | "));
+              }
+              if (ps && ps.seg && ps.seg.length) {
+                var segTxt = [];
+                for (
+                  var si = Math.max(0, ps.seg.length - 4);
+                  si < ps.seg.length;
+                  si++
+                ) {
+                  var sg = ps.seg[si] || {};
+                  segTxt.push(
+                    "hace " +
+                      Math.max(0, Math.round((Date.now() - (sg.at || 0)) / 1e3)) +
+                      "s c=" +
+                      (sg.code || 0) +
+                      " " +
+                      Math.round((sg.len || 0) / 1024) +
+                      "KB " +
+                      (sg.ms || 0) +
+                      "ms" +
+                      (sg.err ? " " + Ka(sg.err) : "")
+                  );
+                }
+                lines.push("SEG: " + segTxt.join(" | "));
               }
               lines.push(
                 "Foto de esta pantalla = lo que necesito para ver el corte."
@@ -6500,6 +6953,19 @@
                       (X.streamMode || "normal") +
                       (X.streamError ? " | error " + Ka(X.streamError) : "")
                   ));
+                /* Tiempos reales de arranque: permiten ver de un vistazo si la
+                   demora está en resolver la señal o en que el reproductor
+                   reciba el primer cuadro (relay/ffmpeg o CDN lento). */
+                var pt = window.__xuperTiming || {};
+                if (typeof pt.resolveMs === "number" && pt.resolveMs >= 0)
+                  t.push(
+                    "Tiempos: resolver " +
+                      Math.round(pt.resolveMs) +
+                      " ms | primer cuadro " +
+                      (typeof pt.firstFrameMs === "number" && pt.firstFrameMs >= 0
+                        ? Math.round(pt.firstFrameMs / 100) / 10 + " s"
+                        : "pendiente")
+                  );
                 for (var r = 0; r < n.length && r < 5; r++)
                   t.push(
                     "Host " +
@@ -6526,6 +6992,8 @@
                         (ev.err || 0) +
                         " buf=" +
                         (ev.buf || 0) +
+                        (ev.b0 ? "-" + ev.b0 : "") +
+                        (ev.ns ? " ns=" + ev.ns : "") +
                         (ev.ch ? " " + Ka(ev.ch) : "")
                     );
                   }
@@ -6572,6 +7040,46 @@
                     );
                   }
                   t.push("HLS: " + hlsRTxt.join(" | "));
+                }
+                var segR = e.proxyStats && e.proxyStats.seg;
+                if (segR && segR.length) {
+                  var segRTxt = [];
+                  for (
+                    var sri = Math.max(0, segR.length - 4);
+                    sri < segR.length;
+                    sri++
+                  ) {
+                    var srh = segR[sri] || {};
+                    segRTxt.push(
+                      "hace " +
+                        Math.max(
+                          0,
+                          Math.round((Date.now() - (srh.at || 0)) / 1e3)
+                        ) +
+                        "s c=" +
+                        (srh.code || 0) +
+                        " " +
+                        Math.round((srh.len || 0) / 1024) +
+                        "KB " +
+                        (srh.ms || 0) +
+                        "ms" +
+                        (srh.err ? " " + Ka(srh.err) : "")
+                    );
+                  }
+                  t.push("SEG: " + segRTxt.join(" | "));
+                }
+                var rl = e.relay;
+                if (rl) {
+                  t.push(
+                    "",
+                    "MODO FLUIDO: " +
+                      Ka(rl.state || "?") +
+                      (rl.error ? " (" + Ka(rl.error) + ")" : "") +
+                      (rl.running ? " | relay activo" : " | relay detenido")
+                  );
+                  var rlLog = rl.log || [];
+                  for (var rli = 0; rli < rlLog.length; rli++)
+                    t.push("  " + Ka(rlLog[rli]));
                 }
                 return (
                   t.push(""),
@@ -7871,7 +8379,10 @@
   }
   function Tn(e, t) {
     var a = Sn(e);
-    ((X.streamMode = t ? "smooth" : "normal"), a && (Cn[a] = !!t));
+    /* Un cambio de modo hecho por el espectador reabre la puerta al rescate
+       automático y al vigilante de arranque. */
+    ((smoothFallbackKey = ""), (xrKey = ""), (xr = !1),
+      (X.streamMode = t ? "smooth" : "normal"), a && (Cn[a] = !!t));
   }
   function _n() {
     ((wn = ""),
@@ -9439,7 +9950,25 @@
               (c._idx = l),
               (c._activate = (function (e) {
                 return function () {
-                  Xt(e);
+                  /* Igual que en el selector de categorías: la carga es
+                     asíncrona, así que hay que recolocar X.channel cuando
+                     llega la lista nueva (si no, el foco/OK apuntaba a un
+                     canal fuera de rango y la TV no cambiaba). */
+                  var prevKey = F[X.channel] ? liveChannelKey(F[X.channel]) : "";
+                  Xt(e, function () {
+                    var j = 0,
+                      k;
+                    if (prevKey) {
+                      for (k = 0; k < F.length; k++)
+                        if (liveChannelKey(F[k]) === prevKey) {
+                          j = k;
+                          break;
+                        }
+                    }
+                    X.channel = Math.max(0, Math.min(F.length - 1, j));
+                    if ("player" === X.screen) fr(X.channel);
+                    else if ("home" === X.screen) Qt(liveFavoritesOnly);
+                  });
                 };
               })(d)),
               (c._onMove = (function (e) {
@@ -9528,31 +10057,27 @@
                 Mt && Mt.id === t.id && a.classList.add("is-selected"),
                 (a._cat = t),
                 (a._activate = function () {
-                  Xt(t);
-                  ur(!0);
-                  Yt("Categoría: " + t.name);
-                  if ("home" === X.screen) {
-                    Qt(liveFavoritesOnly);
-                  } else if ("player" === X.screen) {
-                    hr(0);
-                  }
-                  if (categoryPickerReturnFocus && at(categoryPickerReturnFocus)) {
-                    rt(categoryPickerReturnFocus);
-                  } else {
-                    var ret = Se ? Se.querySelector(".pc-btn-filter") : null;
-                    if (ret && at(ret)) {
-                      rt(ret);
-                    } else if ("player" === X.screen && Ce) {
-                      rt(Ce);
-                    } else if ("home" === X.screen) {
-                      var homeFast = document.querySelector(".live-fast .f-all");
-                      if (homeFast && at(homeFast)) {
-                        rt(homeFast);
-                      } else if (Fe[0] && at(Fe[0])) {
-                        rt(Fe[0]);
-                      }
+                  /* La lista de la categoría se carga de forma asíncrona. Antes
+                     se hacía hr(0) contra la lista vieja y el foco terminaba en
+                     el reproductor: pulsar OK no cambiaba de canal y la TV se
+                     quedaba en el canal anterior. Ahora se espera la carga,
+                     se recoloca X.channel y el foco entra en la primera fila. */
+                  var prevKey = F[X.channel] ? liveChannelKey(F[X.channel]) : "";
+                  (ur(!0), Yt("Categoría: " + t.name));
+                  Xt(t, function () {
+                    var j = 0,
+                      k;
+                    if (prevKey) {
+                      for (k = 0; k < F.length; k++)
+                        if (liveChannelKey(F[k]) === prevKey) {
+                          j = k;
+                          break;
+                        }
                     }
-                  }
+                    X.channel = Math.max(0, Math.min(F.length - 1, j));
+                    if ("player" === X.screen) fr(X.channel);
+                    else if ("home" === X.screen) Qt(liveFavoritesOnly);
+                  });
                 }),
                 Ge.appendChild(a));
             })(t[i]);
@@ -9718,6 +10243,17 @@
             channelIndex === X.channel && p.classList.add("is-current"),
             (p._activate = (function (e) {
               return function () {
+                /* Elegir un canal desde la lupa debe terminar la búsqueda:
+                   antes el texto quedaba pegado en el panel y las siguientes
+                   veces el filtro seguía ocultando el resto de canales. */
+                var wasSearch = liveSearchOpen || !!(liveSearchText || "");
+                if (wasSearch) {
+                  liveSearchText = "";
+                  if (liveSearchOpen) closeLiveChannelSearch();
+                  Kt(e, !0);
+                  fr(e);
+                  return;
+                }
                 (Kt(e, !0), rt(this));
               };
             })(channelIndex)),
@@ -9798,6 +10334,11 @@
     wr = !1,
     Sr = null,
     xr = !1,
+    /* Clave del título para el que ya se volvió a Normal: el vigilante debe
+       poder rearmarse en el siguiente título (antes quedaba desactivado para
+       toda la sesión y el segundo intento se quedaba en "Conectando"). */
+    xrKey = "",
+    smoothFallbackKey = "",
     Tr = null;
   function _r() {
     var e = (function () {
@@ -10161,6 +10702,11 @@
   function Gr(e, t) {
     if (xe && e) {
       var a = !!(t = t || {}).nativeHls;
+      /* Marca de arranque para medir cuánto tarda el primer cuadro. */
+      try {
+        var ptT = window.__xuperTiming || (window.__xuperTiming = {});
+        ((ptT.playT0 = Date.now()), (ptT.firstFrameMs = -1));
+      } catch (e) {}
       (zr(!!kr(e)), (wr = !1), (gr = e));
       "live" === X.playerMode && resetLiveLatencyGuard();
       var i = /^(http:\/\/127\.0\.0\.1:\d+)/.exec(e);
@@ -10169,6 +10715,14 @@
         var n = /[?&]start=(\d+)/.exec(e);
         ((Cr = n ? parseInt(n[1], 10) : 0),
           (function (e) {
+            /* El vigilante anti-pantalla-negra se rearma por título. Antes solo
+               disparaba una vez por sesión: el segundo intento en Modo Fluido
+               se quedaba en "Conectando" indefinidamente. */
+            var wkey =
+              String((X.playerItem && X.playerItem.id) || "") +
+              "|" +
+              String((X.playerEpisode && X.playerEpisode.id) || "");
+            wkey !== xrKey && ((xrKey = wkey), (xr = !1));
             (Lr(),
               kr(e) &&
                 !xr &&
@@ -10182,6 +10736,10 @@
                       (xr = !0),
                       (X.streamMode = "normal"),
                       K(STREAM_MODE_KEY, "normal"),
+                      /* No rebotar Normal → Fluido para este título: ya se
+                         comprobó que el relay no arranca aquí. */
+                      (wn =
+                        Ln(X.playerItem) || Sn(X.playerItem) || wn),
                       jr("Modo Fluido no respondió, usando Modo Normal…"),
                       sr()));
                 }, 15e3)));
@@ -10221,6 +10779,37 @@
               "live" === X.playerMode && Zr === i && Gr(e, { nativeHls: !0 });
             }, 0)
           );
+        }
+        /* Modo Fluido es la red de seguridad: si el relay no entrega un vídeo
+           que la TV pueda decodificar (err 2/3/4), se vuelve a Modo Normal una
+           sola vez por título en lugar de terminar en "no se pudo abrir el
+           stream (código 4)". Se fija wn para no rebotar Normal → Fluido. */
+        if (
+          (2 === t || 3 === t || 4 === t) &&
+          "vod" === X.playerMode &&
+          ("smooth" === X.streamMode || "relay" === X.streamMode) &&
+          X.playerItem
+        ) {
+          var sfItem = X.playerItem,
+            sfKey =
+              (Ln(sfItem) || Sn(sfItem) || "") +
+              "|" +
+              String((X.playerEpisode && X.playerEpisode.id) || "");
+          if (smoothFallbackKey !== sfKey)
+            return (
+              (smoothFallbackKey = sfKey),
+              (wn = Ln(sfItem) || Sn(sfItem) || wn),
+              (X.streamMode = "normal"),
+              K(STREAM_MODE_KEY, "normal"),
+              Lr(),
+              jr("Modo Fluido no pudo abrir el vídeo; volviendo a Modo Normal…"),
+              void setTimeout(function () {
+                "vod" === X.playerMode &&
+                  X.playerItem === sfItem &&
+                  "normal" === X.streamMode &&
+                  sr();
+              }, 0)
+            );
         }
         if (
           4 === t &&
@@ -10341,6 +10930,13 @@
           }
         }),
         (xe.onplaying = function () {
+          try {
+            var ptP = window.__xuperTiming;
+            ptP &&
+              ptP.playT0 &&
+              !(ptP.firstFrameMs >= 0) &&
+              (ptP.firstFrameMs = Date.now() - ptP.playT0);
+          } catch (e) {}
           (clearLiveStallWatch(),
             "live" === X.playerMode && logLive("play"),
             "live" === X.playerMode &&
@@ -10450,12 +11046,21 @@
         (xe.onstalled = function () {
           Pr("Conectando…");
         }));
+      /* Cambiar de canal reutiliza el mismo <video>. En el reproductor nativo de
+         webOS dejar la señal anterior decodificando mientras entra la nueva
+         termina en MEDIA_ERR_DECODE (err=3) y el canal se queda en
+         "Conectando". Se detiene el pipeline anterior antes de montar la nueva
+         fuente. No se toca currentTime (prohibido en vivo). */
+      try {
+        if (xe.currentSrc || xe.getAttribute("src")) {
+          (xe.pause(), xe.removeAttribute("src"), xe.load());
+        }
+      } catch (e) {}
       for (
         /* En vivo NO se envía playTime.start=0: forzar el inicio al segmento
            más viejo de la ventana HLS saca al decodificador del borde en vivo
            y termina en MEDIA_ERR_DECODE (err=3). VOD conserva el inicio en 0. */
-        var l =
-            "live" === X.playerMode
+        var l = "live" === X.playerMode
               ? { mediaTransportType: o ? "HLS" : "URI" }
               : {
                   mediaTransportType: o ? "HLS" : "URI",
@@ -10520,6 +11125,7 @@
     var a = yr;
     function i() {
       var i = { contentId: e.id };
+      var ptT0 = Date.now();
       if (
         ((i.playbackMode = X.streamMode),
         (i.forceRelay = "smooth" === X.streamMode || "relay" === X.streamMode),
@@ -10556,6 +11162,11 @@
       }
       var done = function (i, n) {
         if (a !== yr) return;
+        /* Tiempo que tardó el servicio en resolver la señal (diagnóstico). */
+        try {
+          (window.__xuperTiming || (window.__xuperTiming = {})).resolveMs =
+            Date.now() - ptT0;
+        } catch (e) {}
         /* Como XuperMH: si Modo Fluido no se puede resolver, reintenta una vez
            por el camino Normal en lugar de dejar al espectador sin vídeo. */
         if (
@@ -10751,9 +11362,13 @@
         rs: (xe && xe.readyState) || 0,
         err: (xe && xe.error && xe.error.code) || 0,
         buf: b && b.length ? Math.round(b.end(b.length - 1)) : 0,
+        /* Rango del buffer y estado de red: solo diagnóstico, permite ver si
+           el congelamiento es un hueco de buffer (b0) o una espera de red. */
+        b0: b && b.length ? Math.round(b.start(b.length - 1)) : 0,
+        ns: (xe && xe.networkState) || 0,
         ch: String((F[X.channel] && F[X.channel].name) || "").slice(0, 40),
       });
-      if (liveLogBuf.length > 30) liveLogBuf.shift();
+      if (liveLogBuf.length > 60) liveLogBuf.shift();
       liveLogTimer ||
         (liveLogTimer = setTimeout(function () {
           liveLogTimer = null;
@@ -10868,10 +11483,12 @@
       if (liveStallRetries < 2) {
         liveStallRetries++;
         resetLiveLatencyGuard();
+        logLive("stall" + (xe.readyState || 0));
         logLive("reload");
         to(F[X.channel], !0, !0);
         return;
       }
+      logLive("freeze" + (xe.readyState || 0));
       watchLiveStall(3e4);
     }, delay || 20e3);
   }
@@ -10881,6 +11498,10 @@
       e || (e = F[X.channel]),
       e && (e.channelCode || e.streamUrl))
     ) {
+      if (F && F.length) {
+        var idx = F.indexOf(e);
+        if (idx >= 0) X.channel = idx;
+      }
       liveStallChannel !== X.channel &&
         ((liveStallChannel = X.channel),
         (liveStallRetries = 0),
@@ -10890,29 +11511,49 @@
         (liveDecodeCooldown = 0));
       clearLiveStallWatch();
       logLive("zap");
+      /* Al cambiar de canal o solicitar recarga, pausar y desmontar la señal
+         anterior para que no siga sonando ni reproduciéndose de fondo mientras
+         resuelve la nueva. */
+      try {
+        if (xe) {
+          xe.pause();
+          xe.removeAttribute("src");
+          xe.load();
+        }
+      } catch (errZap) {}
       var a = function () {
         var t = ++Zr;
         (jr("Cargando señal " + (e.name || "") + "…"),
           P(
             "resolveLive",
             e.streamUrl
-              ? { streamUrl: e.streamUrl, force: force ? 1 : 0, name: e.name || "" }
+              ? { streamUrl: e.streamUrl, channelCode: e.channelCode || "", force: force ? 1 : 0, name: e.name || "" }
               : { channelCode: e.channelCode, force: force ? 1 : 0, name: e.name || "" },
             function (e, a) {
               if (t === Zr) {
-                if (e || !a || !1 === a.returnValue)
+                if (e || !a || !1 === a.returnValue) {
+                  clearLiveStallWatch();
+                  try {
+                    xe && (xe.pause(), xe.removeAttribute("src"), xe.load());
+                  } catch (errErr) {}
                   return (
                     (X.streamError =
                       "No se pudo conectar con la señal" + (e ? ": " + e : "")),
                     void jr(X.streamError)
                   );
+                }
                 D("live", a);
                 var i = a.proxyPath || a.url;
-                if (!i)
+                if (!i) {
+                  clearLiveStallWatch();
+                  try {
+                    xe && (xe.pause(), xe.removeAttribute("src"), xe.load());
+                  } catch (errNoUrl) {}
                   return (
                     (X.streamError = "Señal no disponible"),
                     void jr(X.streamError)
                   );
+                }
                 (jr(""), pi(), Gr(i));
               }
             }
@@ -11024,6 +11665,10 @@
     }
   }
   function ro() {
+    /* Cerrar el panel también termina la búsqueda: si no, la lupa reaparecía
+       con el texto anterior y filtraba la lista la próxima vez que se abría. */
+    if (liveSearchOpen) closeLiveChannelSearch();
+    liveSearchText = "";
     ((X.channelsOpen = !1),
       Se && Se.classList.remove("is-active"),
       "player" === X.screen && rt(Ce));
@@ -11089,16 +11734,22 @@
     document.addEventListener(
       "keyup",
       function (e) {
-        (461 !== (e.keyCode || e.which) &&
-          "Back" !== e.key &&
-          "GoBack" !== e.key) ||
+        var k = e.keyCode || e.which;
+        if (461 === k || "Back" === e.key || "GoBack" === e.key) {
+          if (Date.now() - lastBackKeyDown < 450) {
+            e.preventDefault && e.preventDefault();
+            e.stopPropagation && e.stopPropagation();
+            return;
+          }
           ut(e);
+        }
       },
       !1
     );
     window.addEventListener(
       "popstate",
       function () {
+        if (Date.now() - lastBackKeyDown < 450) return;
         ct();
       },
       !1

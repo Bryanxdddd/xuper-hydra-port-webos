@@ -12,6 +12,7 @@ const magis = require(path.join(svcDir, "magis.js"));
 const proxy = require(path.join(svcDir, "proxy.js"));
 const dnsx = require(path.join(svcDir, "dnsx.js"));
 const netdiag = require(path.join(svcDir, "netdiag.js"));
+const tvplus = require(path.join(svcDir, "tvplus.js"));
 
 const PORT = Number(process.argv[2] || 8910);
 
@@ -73,19 +74,49 @@ const server = http.createServer((req, res) => {
   }
   if (u.pathname === "/resolveLive") {
     const streamUrl = u.searchParams.get("streamUrl") || "";
-    if (streamUrl) {
-      return done(null, { url: streamUrl, proxyPath: streamUrl, isHls: true });
-    }
     const channelCode = u.searchParams.get("channelCode") || "";
-    return magis.resolveLive(channelCode, (err, stream) => {
-      if (err) return done(err);
+    // Igual que index.js: los canales "tvplus:" se resuelven por tvplus.js y se
+    // sirven a través del proxy con IP fijada por DoH (no con el DNS del equipo).
+    const tvCode = /^tvplus:/i.test(streamUrl)
+      ? streamUrl.replace(/^tvplus:/i, "")
+      : /^tvplus:/i.test(channelCode)
+        ? channelCode.replace(/^tvplus:/i, "")
+        : "";
+    const serveLive = (stream) => {
       proxy.start((perr) => {
         if (perr) return done(perr);
-        stream.proxyPath = proxy.baseUrl() + "/media/" + proxy.add(stream.url, stream.headers, 0) + "/stream.m3u8";
-        stream.isHls = true;
-        done(null, stream);
+        const host = String(stream.url || "").replace(/^https?:\/\//i, "").split("/")[0].split(":")[0];
+        const is247 = /24[\s\/-]?7/i.test(String(stream.name || channelCode || ""));
+        const startWithIp = (ip) => {
+          const token = proxy.add(stream.url, stream.headers || {}, 0, ip, null, true, is247);
+          done(null, {
+            url: stream.url,
+            headers: stream.headers || {},
+            proxyPath: proxy.baseUrl() + "/media/" + token + "/stream.m3u8",
+            isHls: true,
+          });
+        };
+        if (!host) return startWithIp("");
+        dnsx.resolve(host, (der, dr) => startWithIp((dr && dr.ips && dr.ips[0]) || ""));
       });
-    });
+    };
+    if (tvCode) {
+      return tvplus.resolve(tvCode, (err, tvRes) => {
+        if (err || !tvRes || !tvRes.url) {
+          if (channelCode && !/^tvplus:/i.test(channelCode)) {
+            return magis.resolveLive(channelCode, (e2, s2) => (e2 ? done(e2) : serveLive(s2)));
+          }
+          return done(err || new Error("Señal TvPlus no disponible: " + tvCode));
+        }
+        serveLive(tvRes);
+      }, { force: u.searchParams.get("force") === "1" });
+    }
+    if (streamUrl) {
+      // La URL directa del portal se deja tal cual en el arnés de escritorio
+      // (Chrome no reproduce MPEG-TS a través del proxy, la TV sí).
+      return done(null, { url: streamUrl, proxyPath: streamUrl, isHls: true });
+    }
+    return magis.resolveLive(channelCode, (err, stream) => (err ? done(err) : serveLive(stream)));
   }
   if (u.pathname === "/netdiag") {
     const hosts = (magis.constants.HOSTS || []).slice(0);

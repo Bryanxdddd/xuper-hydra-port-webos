@@ -13,13 +13,35 @@ var http = require("http"),
   execState = "pending",
   execError = "",
   sessions = {},
-  current = null;
+  current = null,
+  /* Tiempo máximo total para que algún plan de ffmpeg empiece a emitir. Un
+     presupuesto largo se traducía en "Conectando" de casi dos minutos antes de
+     que la app volviera a Modo Normal: ahora el peor caso queda acotado y el
+     espectador ve vídeo (Normal) en segundos. */
+  START_BUDGET_MS = 28e3,
+  startDeadline = 0,
+  /* Últimas líneas del relay (solo diagnóstico). Se muestran en
+     Diagnóstico → Modo Fluido para saber por qué no arrancó el vídeo. */
+  relayLog = [];
 function log() {
-  var e = Array.prototype.slice.call(arguments);
-  try {
-    fs.appendFileSync("/tmp/xuper-relay.log", e.join(" ") + "\n");
-  } catch (e) {}
+  var e = Array.prototype.slice.call(arguments),
+    line = e.join(" ");
+  (relayLog.push(line),
+    relayLog.length > 40 && relayLog.shift(),
+    (function () {
+      try {
+        fs.appendFileSync("/tmp/xuper-relay.log", line + "\n");
+      } catch (e) {}
+    })());
   console.log.apply(console, ["[relay]"].concat(e));
+}
+/* Una línea de diagnóstico nunca debe llevar enlaces ni tokens a la pantalla
+   de la TV: se recorta la URL y se limita el largo. */
+function safeLine(t) {
+  return String(t || "")
+    .replace(/https?:\/\/\S+/gi, "[url]")
+    .replace(/[A-Za-z0-9+/=_-]{28,}/g, "[token]")
+    .slice(0, 150);
 }
 function setExecState(e, t) {
   ((execState = e),
@@ -185,14 +207,21 @@ function buildArgs(e, t, r, o, n) {
       "-loglevel",
       "warning",
       "-nostdin",
+      /* Sondear 1 MB retrasaba el primer fragmento varios segundos en un CDN
+         lento: el espectador veía "Conectando" y el relay se rendía. Con
+         ~384 KB basta para detectar vídeo/audio de una señal ya conocida. */
       "-probesize",
-      "1M",
+      "384K",
       "-analyzeduration",
-      "1M",
+      "300000",
     ];
   return (
     /^https?:\/\//i.test(c) &&
       (u.push("-rw_timeout", "15000000"),
+      /* Un CDN que corta la conexión a mitad de película no debe terminar la
+         reproducción: se reintenta la lectura. */
+      s || u.push("-reconnect", "1", "-reconnect_streamed", "1",
+        "-reconnect_delay_max", "4", "-reconnect_at_eof", "0"),
       /^https:/i.test(c) && u.push("-tls_verify", "0"),
       i.ua && u.push("-user_agent", i.ua),
       i.rest && u.push("-headers", i.rest)),
@@ -349,19 +378,33 @@ var server = http.createServer(function (e, t) {
     i = Number(null != r.query.a ? r.query.a : n.audio) || 0,
     u = "1" === String(r.query.aac || ""),
     l = [];
+  /* Orden de planes pensado para un CDN lento: primero el camino que se midió
+     funcionando (proxy + remultiplexado con aac_adtstoasc), y solo después los
+     rescates. En MP4 se omite la variante sin bsf porque el muxer rechaza el
+     AAC en ADTS ("Malformed AAC bitstream"): ese plan quemaba 15 s de espera
+     para fallar siempre. Para TS (compatibilidad) se mantiene la lista corta. */
   function f(e) {
-    (n.proxyUrl &&
+    n.proxyUrl &&
       l.push({ audio: e.audio, aac: e.aac, bsf: e.bsf, viaProxy: !0 }),
-      l.push({ audio: e.audio, aac: e.aac, bsf: e.bsf, viaProxy: !1 }));
+      l.push({ audio: e.audio, aac: e.aac, bsf: e.bsf, viaProxy: !1 });
   }
   (u
     ? f({ audio: i, aac: !0, bsf: !1 })
-    : (f({ audio: i, aac: !1, bsf: !0 }),
-      f({ audio: i, aac: !1, bsf: !1 }),
-      f({ audio: 0, aac: !0, bsf: !1 })),
+    : "ts" === a
+      ? (f({ audio: i, aac: !1, bsf: !0 }),
+        f({ audio: 0, aac: !0, bsf: !1 }))
+      : (f({ audio: i, aac: !1, bsf: !0 }),
+        f({ audio: i, aac: !0, bsf: !1 })),
     stopCurrent(),
+    (startDeadline = Date.now() + START_BUDGET_MS),
     (function e(r) {
       var o = l[r];
+      if (!o || Date.now() >= startDeadline)
+        return (
+          log("ningún plan de ffmpeg arrancó dentro del tiempo; se entrega Normal"),
+          t.finished ||
+            (t.writeHead(502, { "Access-Control-Allow-Origin": "*" }), t.end())
+        );
       ensureExecutable(function (i, u) {
         if (i)
           resolveForFfmpeg(
@@ -374,22 +417,41 @@ var server = http.createServer(function (e, t) {
                   stdio: ["ignore", "pipe", "pipe"],
                 });
                 current = { ff: i };
-                var u = !1,
+                var startedAt = Date.now(),
+                  u = !1,
                   f = !1,
-                  p = setTimeout(function () {
-                    if (!u && current && current.ff === i) {
-                      log(
-                        "ffmpeg no emitió en 12 s con el plan " +
-                          (r + 1) +
-                          "/" +
-                          l.length +
-                          "; probando el siguiente"
-                      );
-                      try {
-                        i.kill("SIGKILL");
-                      } catch (e) {}
-                    }
-                  }, 12e3);
+                  planTxt =
+                    "plan " +
+                    (r + 1) +
+                    "/" +
+                    l.length +
+                    " (" +
+                    (o.viaProxy ? "proxy" : "directo") +
+                    (o.audio ? " a=" + o.audio : "") +
+                    (o.aac ? " AAC" : " copia") +
+                    (o.bsf ? " bsf" : "") +
+                    ")";
+                log(
+                  "ffmpeg " + planTxt + (c > 0 ? " desde " + c + "s" : "")
+                );
+                var planCap = r === 0 ? 18e3 : 10e3,
+                  planWait = Math.max(4e3, Math.min(planCap, startDeadline - Date.now()));
+                var p = setTimeout(function () {
+                  if (!u && current && current.ff === i) {
+                    (log(
+                      "ffmpeg no emitió en " +
+                        Math.round(planWait / 1000) +
+                        " s con " +
+                        planTxt +
+                        "; probando el siguiente"
+                    ),
+                      (function () {
+                        try {
+                          i.kill("SIGKILL");
+                        } catch (e) {}
+                      })());
+                  }
+                }, planWait);
                 (i.on("error", function (e) {
                   (clearTimeout(p),
                     log("no se pudo lanzar ffmpeg:", e.message),
@@ -404,6 +466,7 @@ var server = http.createServer(function (e, t) {
                   i.stdout.on("data", function (e) {
                     (u ||
                       (clearTimeout(p),
+                      log("ffmpeg primer fragmento en", Date.now() - startedAt, "ms"),
                       t.writeHead(200, {
                         "Content-Type": s,
                         "Accept-Ranges": "none",
@@ -499,11 +562,17 @@ var server = http.createServer(function (e, t) {
       }
     },
     state: function () {
+      var out = [],
+        i;
+      for (i = Math.max(0, relayLog.length - 14); i < relayLog.length; i++)
+        out.push(safeLine(relayLog[i]));
       return {
         state: execState,
         error: execError,
         path: FFMPEG,
         tmp: FFMPEG_TMP,
+        running: !!current,
+        log: out,
       };
     },
     selfTest: function (e) {

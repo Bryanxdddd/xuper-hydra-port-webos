@@ -24,6 +24,7 @@ var magis = loadModule("./magis"),
   netdiag = loadModule("./netdiag"),
   upstream = loadModule("./upstream"),
   updater = loadModule("./updater"),
+  tvplus = loadModule("./tvplus"),
   liveLogRing = [];
 try {
   var savedProxy = JSON.parse(fs.readFileSync("/tmp/xuper-proxy.json", "utf8"));
@@ -546,6 +547,75 @@ function startHttpApi() {
       needModule(e, dnsx, "./dnsx")
     ) {
       var r = e.payload || {};
+      var sUrl = r.streamUrl || "";
+      var cCode = r.channelCode || "";
+      var tvCode = null;
+      if (/^tvplus:/i.test(sUrl)) {
+        tvCode = sUrl.replace(/^tvplus:/i, "");
+      } else if (/^tvplus:/i.test(cCode)) {
+        tvCode = cCode.replace(/^tvplus:/i, "");
+      }
+
+      var resolveMagis = function (targetCode) {
+        magis.resolveLive(
+          targetCode,
+          function (r2, a2) {
+            if (r2) return fail(e, r2);
+            var s = urlmod.parse(a2.url || "").hostname || "";
+            dnsx.resolve(s, function (r3, s3) {
+              var t = (s3 && s3.ips && s3.ips[0]) || "";
+              proxy.start(function (r4) {
+                if (r4) return fail(e, r4);
+                var chName = String((a2 && a2.name) || (r && r.name) || "");
+                var is247 = /24[\s\/-]?7/i.test(chName);
+                var s4 = proxy.add(a2.url, a2.headers, 0, t, a2.backupUrls, !0, is247);
+                ((a2.proxyPath =
+                  proxy.baseUrl() + "/media/" + s4 + "/stream.m3u8"),
+                  (a2.isHls = !0),
+                  respond(e, null, a2));
+              });
+            });
+          },
+          !!r.force
+        );
+      };
+
+      if (tvCode) {
+        if (!needModule(e, tvplus, "./tvplus")) return;
+        return tvplus.resolve(
+          tvCode,
+          function (err, tvRes) {
+            if (err || !tvRes || !tvRes.url) {
+              if (cCode && !/^tvplus:/i.test(cCode)) {
+                return resolveMagis(cCode);
+              }
+              return fail(e, err || new Error("Señal TvPlus no disponible: " + tvCode));
+            }
+            var sHost = urlmod.parse(tvRes.url || "").hostname || "";
+            var startTvProxy = function (ip) {
+              proxy.start(function (pErr) {
+                if (pErr) return fail(e, pErr);
+                var chName = String(r.name || tvCode || "");
+                var is247 = /24[\s\/-]?7/i.test(chName);
+                var tToken = proxy.add(tvRes.url, tvRes.headers || {}, 0, ip, null, !0, is247);
+                respond(e, null, {
+                  url: tvRes.url,
+                  proxyPath: proxy.baseUrl() + "/media/" + tToken + "/stream.m3u8",
+                  isHls: !0,
+                });
+              });
+            };
+            return sHost
+              ? dnsx.resolve(sHost, function (e2, r2) {
+                  var ip = (r2 && r2.ips && r2.ips[0]) || "";
+                  startTvProxy(ip);
+                })
+              : startTvProxy("");
+          },
+          { force: !!r.force }
+        );
+      }
+
       if (r.streamUrl) {
         var a = r.streamUrl,
           s = urlmod.parse(a || "").hostname || "",
@@ -571,27 +641,7 @@ function startHttpApi() {
           : t("");
       }
       if (!r.channelCode) return fail(e, new Error("channelCode requerido"));
-      magis.resolveLive(
-        r.channelCode,
-        function (r, a) {
-          if (r) return fail(e, r);
-          var s = urlmod.parse(a.url || "").hostname || "";
-          dnsx.resolve(s, function (r, s) {
-            var t = (s && s.ips && s.ips[0]) || "";
-            proxy.start(function (r) {
-              if (r) return fail(e, r);
-              var chName = String((a && a.name) || (r && r.name) || "");
-              var is247 = /24[\s\/-]?7/i.test(chName);
-              var s = proxy.add(a.url, a.headers, 0, t, a.backupUrls, !0, is247);
-              ((a.proxyPath =
-                proxy.baseUrl() + "/media/" + s + "/stream.m3u8"),
-                (a.isHls = !0),
-                respond(e, null, a));
-            });
-          });
-        },
-        !!r.force
-      );
+      resolveMagis(r.channelCode);
     }
   }),
   service.register("abortMedia", function (e) {

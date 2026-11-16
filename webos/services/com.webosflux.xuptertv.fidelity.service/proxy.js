@@ -42,6 +42,11 @@ var http = require("http"),
     /* Últimos manifiestos HLS vistos: segundos de ventana, tipo, ENDLIST,
        target duration y MEDIA-SEQUENCE. Diagnóstico de saltos en vivo. */
     hls: [],
+    /* Últimos segmentos pedidos por el reproductor: hora, estado HTTP,
+       bytes, tiempo de respuesta y error. Solo diagnóstico: permite saber si
+       un congelamiento viene de un segmento que no llegó o llegó tarde.
+       No altera la entrega ni el manifiesto. */
+    seg: [],
   };
 
 function destroyConnection(e) {
@@ -468,32 +473,40 @@ function rewriteHlsManifest(e, t, r, is247, isFirst, state) {
       }
     }
   }
+  /* Detección común a todos los manifiestos: un manifiesto finito (VOD o con
+     #EXT-X-ENDLIST) no se modifica nunca. */
+  var finite = !1,
+    target = 0,
+    i2,
+    s2,
+    m2,
+    segStarts = [],
+    isMaster = !1;
+  for (i2 = 0; i2 < n.length; i2++) {
+    s2 = n[i2] || "";
+    if (
+      0 === s2.indexOf("#EXT-X-PLAYLIST-TYPE:VOD") ||
+      0 === s2.indexOf("#EXT-X-ENDLIST")
+    )
+      finite = !0;
+    /* Un manifiesto maestro lista variantes, no segmentos: nunca se renumera
+       (insertar #EXT-X-MEDIA-SEQUENCE ahí sería inválido). */
+    if (-1 !== s2.indexOf("-STREAM-INF") || 0 === s2.indexOf("#EXT-X-MEDIA:"))
+      isMaster = !0;
+    m2 = /^#EXT-X-TARGETDURATION:\s*([\d.]+)/.exec(s2);
+    if (m2) target = parseFloat(m2[1]) || 0;
+    if (0 === s2.indexOf("#EXTINF")) segStarts.push(i2);
+  }
   /* Canales 24/7 en vivo: el reproductor nativo de webOS arranca en el primer
      segmento del manifiesto, no en el borde en vivo. Si la ventana del CDN es
      corta (p. ej. 6 segmentos de 5 s), ese primer segmento sale de la ventana
      a los pocos segundos y el vídeo se congela y salta hacia adelante.
      Solución: se entregan solo los últimos segmentos de la ventana, dejando
      margen detrás del borde en vivo, y se añade #EXT-X-START como refuerzo.
-     Los manifiestos VOD/ENDLIST se dejan intactos. */
-  if (is247) {
-    var finite = !1,
-      target = 0,
-      i2,
-      s2,
-      m2,
-      segStarts = [];
-    for (i2 = 0; i2 < n.length; i2++) {
-      s2 = n[i2] || "";
-      if (
-        0 === s2.indexOf("#EXT-X-PLAYLIST-TYPE:VOD") ||
-        0 === s2.indexOf("#EXT-X-ENDLIST")
-      )
-        finite = !0;
-      m2 = /^#EXT-X-TARGETDURATION:\s*([\d.]+)/.exec(s2);
-      if (m2) target = parseFloat(m2[1]) || 0;
-      if (0 === s2.indexOf("#EXTINF")) segStarts.push(i2);
-    }
-    if (!finite && segStarts.length >= 5) {
+     Este recorte se aplica solo a los 24/7; los canales en vivo normales se
+     entregan completos. */
+  if (is247 && !finite) {
+    if (segStarts.length >= 5) {
       var drop = Math.ceil(10 / (target || 5)),
         cutAt,
         head,
@@ -549,48 +562,56 @@ function rewriteHlsManifest(e, t, r, is247, isFirst, state) {
       }
       n.splice(headerAt + 1, 0, "#EXT-X-START:TIME-OFFSET=-15");
     }
-    /* La CDN de los 24/7 está replicada en varios orígenes y cada uno
-       devuelve un #EXT-X-MEDIA-SEQUENCE con un desfase distinto (salta -43,
-       +47, etc.). El reproductor nativo interpreta esos saltos como un
-       cambio de posición: se congela, salta adelante y retrocede. Se
-       renumera de forma monotónica por segmento (clave = URI) para que la
-       secuencia siempre avance y sea coherente. */
-    if (!finite) {
-      var segKeys = [],
-        k2,
-        key,
-        firstKey,
-        newMs,
-        msLineAt = -1,
-        mk;
-      for (i2 = 0; i2 < n.length; i2++) {
-        s2 = n[i2] || "";
-        if (s2 && "#" !== s2.charAt(0)) segKeys.push(s2);
-        if (0 === s2.indexOf("#EXT-X-MEDIA-SEQUENCE:")) msLineAt = i2;
+  }
+  /* La CDN replica los canales en vivo en varios orígenes y cada uno devuelve
+     un #EXT-X-MEDIA-SEQUENCE con un desfase distinto (salta -1, -43, +47…).
+     El reproductor nativo interpreta esos saltos como un cambio de posición:
+     la imagen se congela, se adelanta y retrocede. Se renumera de forma
+     monotónica por segmento (clave = URI del segmento) para que la secuencia
+     siempre avance y sea coherente. Se aplica a todos los canales en vivo
+     (24/7 y normales) y nunca a VOD, ENDLIST ni reproducción no en vivo. */
+  if (!finite && !isMaster && state && state.isLive) {
+    var segKeys = [],
+      k2,
+      key,
+      firstKey,
+      newMs,
+      msLineAt = -1,
+      mk,
+      occ = {};
+    for (i2 = 0; i2 < n.length; i2++) {
+      s2 = n[i2] || "";
+      if (s2 && "#" !== s2.charAt(0)) {
+        /* Un URI repetido en el mismo manifiesto (p. ej. segmentos por
+           #EXT-X-BYTERANGE) se distingue por su orden de aparición, que es
+           estable entre refrescos. */
+        if (!Object.prototype.hasOwnProperty.call(occ, s2)) occ[s2] = 0;
+        occ[s2]++;
+        segKeys.push(occ[s2] > 1 ? s2 + "#" + occ[s2] : s2);
       }
-      if (segKeys.length) {
-        var seqState = state || {};
-        if (!seqState.hlsSeqMap) {
-          seqState.hlsSeqMap = {};
-          seqState.hlsSeqNext = msLineAt >= 0
-            ? parseInt(n[msLineAt].slice(22), 10) || 0
-            : 0;
-        }
-        for (k2 = 0; k2 < segKeys.length; k2++) {
-          key = segKeys[k2];
-          if (!Object.prototype.hasOwnProperty.call(seqState.hlsSeqMap, key))
-            seqState.hlsSeqMap[key] = seqState.hlsSeqNext++;
-        }
-        firstKey = segKeys[0];
-        newMs = seqState.hlsSeqMap[firstKey];
-        if (msLineAt >= 0)
-          n[msLineAt] = "#EXT-X-MEDIA-SEQUENCE:" + newMs;
-        else n.splice(1, 0, "#EXT-X-MEDIA-SEQUENCE:" + newMs);
-        for (mk in seqState.hlsSeqMap)
-          Object.prototype.hasOwnProperty.call(seqState.hlsSeqMap, mk) &&
-            seqState.hlsSeqMap[mk] < newMs - 60 &&
-            delete seqState.hlsSeqMap[mk];
+      if (0 === s2.indexOf("#EXT-X-MEDIA-SEQUENCE:")) msLineAt = i2;
+    }
+    if (segKeys.length) {
+      var seqState = state || {};
+      if (!seqState.hlsSeqMap) {
+        seqState.hlsSeqMap = {};
+        seqState.hlsSeqNext = msLineAt >= 0
+          ? parseInt(n[msLineAt].slice(22), 10) || 0
+          : 0;
       }
+      for (k2 = 0; k2 < segKeys.length; k2++) {
+        key = segKeys[k2];
+        if (!Object.prototype.hasOwnProperty.call(seqState.hlsSeqMap, key))
+          seqState.hlsSeqMap[key] = seqState.hlsSeqNext++;
+      }
+      firstKey = segKeys[0];
+      newMs = seqState.hlsSeqMap[firstKey];
+      if (msLineAt >= 0) n[msLineAt] = "#EXT-X-MEDIA-SEQUENCE:" + newMs;
+      else n.splice(1, 0, "#EXT-X-MEDIA-SEQUENCE:" + newMs);
+      for (mk in seqState.hlsSeqMap)
+        Object.prototype.hasOwnProperty.call(seqState.hlsSeqMap, mk) &&
+          seqState.hlsSeqMap[mk] < newMs - 60 &&
+          delete seqState.hlsSeqMap[mk];
     }
   }
   return n.join("\n");
@@ -891,6 +912,45 @@ function forward(e, t, r, n) {
       }
     }));
 }
+/* Instrumentación de diagnóstico (solo lectura): apunta cada segmento que pide
+   el reproductor con su estado, tamaño y latencia. No modifica la respuesta. */
+function noteSegBegin(path, res) {
+  var bw = 0;
+  try {
+    bw = (res && res.socket && res.socket.bytesWritten) || 0;
+  } catch (e) {}
+  var rec = {
+    at: Date.now(),
+    p: String(path || "").slice(-26),
+    code: 0,
+    len: 0,
+    ms: 0,
+    err: "",
+  };
+  stats.seg.push(rec);
+  while (stats.seg.length > 12) stats.seg.shift();
+  return {
+    rec: rec,
+    t0: rec.at,
+    bw0: bw,
+    res: res,
+  };
+}
+function noteSegEnd(h, res, failed) {
+  if (!h || !h.rec) return;
+  h.rec.ms = Date.now() - h.t0;
+  h.rec.code = (res && res.statusCode) || h.rec.code || 0;
+  try {
+    var cl = res && res.getHeader ? res.getHeader("content-length") : 0;
+    h.rec.len = parseInt(cl, 10) || 0;
+  } catch (e) {}
+  if (!h.rec.len)
+    try {
+      var bw = (res && res.socket && res.socket.bytesWritten) || 0;
+      h.rec.len = bw > h.bw0 ? bw - h.bw0 : 0;
+    } catch (e) {}
+  h.rec.err = failed ? String(failed).slice(0, 24) : "";
+}
 function handler(e, t) {
   try {
     e.setTimeout(0);
@@ -962,6 +1022,13 @@ function handler(e, t) {
         s.childIps[childHost] = pinnedIp;
       }
     }
+    var segH = noteSegBegin(a, t);
+    t.on("finish", function () {
+      noteSegEnd(segH, t, "");
+    });
+    t.on("close", function () {
+      if (!t.writableFinished) noteSegEnd(segH, t, "cortado");
+    });
     return void forward(
       e,
       t,
@@ -1038,6 +1105,7 @@ module.exports = {
       lastStatus: stats.lastStatus,
       lastAt: stats.lastAt,
       hls: stats.hls.slice(),
+      seg: stats.seg.slice(),
     };
   },
 };
