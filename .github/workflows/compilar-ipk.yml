@@ -1,0 +1,28 @@
+name: Compilar IPK webOS
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Instalar herramientas webOS y FFmpeg
+        run: |
+          npm install -g @webos-tools/cli
+          mkdir -p /tmp/ff
+          tar -xJf tools/vendor/ffmpeg-7.0.2-armhf-static.tar.xz -C /tmp/ff
+          cp $(find /tmp/ff -name "ffmpeg" -type f | head -n 1) webos/services/com.webosflux.xuptertv.fidelity.service/ffmpeg
+          chmod 755 webos/services/com.webosflux.xuptertv.fidelity.service/ffmpeg
+      - name: Empaquetar IPK
+        run: |
+          ares-package webos/fidelity webos/services/com.webosflux.xuptertv.fidelity.service -o dist -e shots -e '*.md'
+          python3 tools/fix_ipk_modes.py dist/com.webosflux.xuptertv.fidelity_*_all.ipk
+      - name: Subir IPK descargable
+        uses: actions/upload-artifact@v4
+        with:
+          name: XuperTV-Ultra-webOS
+          path: dist/*.ipk
