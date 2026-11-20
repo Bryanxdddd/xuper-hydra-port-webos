@@ -1,6 +1,43 @@
 !(function () {
   "use strict";
-  var APP_VERSION = "3.1.13";
+  var APP_VERSION = "3.1.69";
+  window.APP_VERSION = APP_VERSION;
+  /* Iconos vectoriales inline: las fuentes de las TV webOS no incluyen
+     glifos ★ ☆ ▶ ⚙ ➕ ni emoji, por eso se dibujan en SVG. */
+  function starSvg(filled) {
+    return (
+      '<svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M16 3.2l4.1 8.3 9.2 1.3-6.7 6.5 1.6 9.1-8.2-4.3-8.2 4.3 1.6-9.1-6.7-6.5 9.2-1.3z" fill="' +
+      (filled ? "currentColor" : "none") +
+      '" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg>'
+    );
+  }
+  function playSvg() {
+    return '<svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M11 6.5l15 9.5-15 9.5z" fill="currentColor"/></svg>';
+  }
+  function plusSvg() {
+    return '<svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M16 6v20M6 16h20" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg>';
+  }
+  function searchSvg() {
+    return '<svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><circle cx="14" cy="14" r="8.5" fill="none" stroke="currentColor" stroke-width="2.8"/><path d="M20.5 20.5L28 28" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>';
+  }
+  function filterSvg() {
+    return '<svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M4 8h24M8 16h16M12 24h8" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/><circle cx="11" cy="8" r="3" fill="currentColor"/><circle cx="20" cy="16" r="3" fill="currentColor"/><circle cx="16" cy="24" r="3" fill="currentColor"/></svg>';
+  }
+  function gearSvg() {
+    return '<svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><circle cx="16" cy="16" r="5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M16 3v4M16 25v4M3 16h4M25 16h4M6.8 6.8l2.8 2.8M22.4 22.4l2.8 2.8M25.2 6.8l-2.8 2.8M9.6 22.4l-2.8 2.8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
+  }
+  function subtitlesSvg() {
+    return '<svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect x="3" y="6" width="26" height="20" rx="3" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M8 19h6M18 19h6M8 14h4M16 14h8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
+  }
+  function bellSvg() {
+    return '<svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M16 4a7 7 0 0 0-7 7v5l-2.5 4.5h19L23 16v-5a7 7 0 0 0-7-7z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M13 24a3 3 0 0 0 6 0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
+  }
+  function gaugeSvg() {
+    return '<svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M5 23a12 12 0 1 1 22 0" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M16 23l6-7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><circle cx="16" cy="23" r="2.2" fill="currentColor"/></svg>';
+  }
+  function clockSvg() {
+    return '<svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M16 9v7l5 3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
+  }
   function e(e, t, a) {
     var i = document.createElement(e);
     return (t && (i.className = t), null != a && (i.textContent = a), i);
@@ -1180,8 +1217,9 @@
       favs: {},
       adultEnabled: !1,
       liveFavorites: {},
-    },
-    $ = "xuper_local_profile_v1",
+    };
+  window.X = X;
+  var $ = "xuper_local_profile_v1",
     G = "xuper_global_playback_v1",
     Q = { id: "", createdAt: 0, history: [] };
   function J(e, t) {
@@ -1341,6 +1379,17 @@
     if (!e) return !1;
     if (e.offsetWidth < 1 || e.offsetHeight < 1) return !1;
     if (null === e.offsetParent) return !1;
+    if (DialogManager && DialogManager.isOpen()) {
+      var act = DialogManager.getActiveDialog();
+      if (act && act.el) {
+        var curr = e;
+        while (curr) {
+          if (curr === act.el) return !0;
+          curr = curr.parentNode;
+        }
+        return !1;
+      }
+    }
     if (Ht) return !!n(e, "#dialog-addons");
     if (X.episodeBrowserOpen) return !!n(e, "#player-episodes");
     if (X.categoryPickerOpen) return !!n(e, "#player-categories");
@@ -1365,21 +1414,27 @@
   }
   function it() {
     var root = null;
-    if (Ht) root = t("dialog-addons");
-    else if (catalogFilterDialog) root = catalogFilterDialog;
-    else if (liveFavoritePrompt) root = liveFavoritePrompt;
-    else if (ji) root = t("dialog-playsettings");
-    else if (Ut) root = t("dialog-update");
-    else if (zi) root = t("player-playsetting-view");
-    else if (xa) root = xa;
-    else if (X.episodeBrowserOpen) root = t("player-episodes");
-    else if (X.categoryPickerOpen) root = t("player-categories");
-    else if ("detail" === X.screen) root = t("screen-detail");
-    else if ("search" === X.screen) root = t("screen-search");
-    else if ("section" === X.screen) root = t("screen-section");
-    else if ("settings" === X.screen) root = t("screen-settings");
-    else if ("player" === X.screen) root = t("screen-player");
-    else if ("home" === X.screen) {
+    if (DialogManager && DialogManager.isOpen()) {
+      var act = DialogManager.getActiveDialog();
+      if (act && act.el) root = act.el;
+    }
+    if (!root) {
+      if (Ht) root = t("dialog-addons");
+      else if (catalogFilterDialog) root = catalogFilterDialog;
+      else if (liveFavoritePrompt) root = liveFavoritePrompt;
+      else if (ji) root = t("dialog-playsettings");
+      else if (Ut) root = t("dialog-update");
+      else if (zi) root = t("player-playsetting-view");
+      else if (xa) root = xa;
+      else if (X.episodeBrowserOpen) root = t("player-episodes");
+      else if (X.categoryPickerOpen) root = t("player-categories");
+    }
+    if ("detail" === X.screen && !root) root = t("screen-detail");
+    else if ("search" === X.screen && !root) root = t("screen-search");
+    else if ("section" === X.screen && !root) root = t("screen-section");
+    else if ("settings" === X.screen && !root) root = t("screen-settings");
+    else if ("player" === X.screen && !root) root = t("screen-player");
+    else if ("home" === X.screen && !root) {
       var curPage = document.querySelector(".home-page.is-current");
       var tList = [];
       var addN = function (nl) {
@@ -1401,18 +1456,95 @@
     }
     return tRes;
   }
+  function smoothScroll(el, targetLeft, targetTop, duration) {
+    if (!el) return;
+    duration = duration || 190;
+    var hasX = typeof targetLeft === "number" && targetLeft !== null;
+    var hasY = typeof targetTop === "number" && targetTop !== null;
+    var startX = el.scrollLeft || 0;
+    var startY = el.scrollTop || 0;
+    var diffX = hasX ? targetLeft - startX : 0;
+    var diffY = hasY ? targetTop - startY : 0;
+    if (Math.abs(diffX) < 2 && Math.abs(diffY) < 2) {
+      if (hasX) el.scrollLeft = targetLeft;
+      if (hasY) el.scrollTop = targetTop;
+      return;
+    }
+    if (el._smoothAnim) {
+      cancelAnimationFrame(el._smoothAnim);
+      el._smoothAnim = null;
+    }
+    var startTime = (window.performance && window.performance.now) ? window.performance.now() : Date.now();
+    function step(now) {
+      var currentTime = (window.performance && window.performance.now) ? now : Date.now();
+      var elapsed = currentTime - startTime;
+      var p = Math.min(1, elapsed / duration);
+      var ease = p * (2 - p);
+      if (hasX) el.scrollLeft = Math.round(startX + diffX * ease);
+      if (hasY) el.scrollTop = Math.round(startY + diffY * ease);
+      if (p < 1) {
+        el._smoothAnim = requestAnimationFrame(step);
+      } else {
+        if (hasX) el.scrollLeft = targetLeft;
+        if (hasY) el.scrollTop = targetTop;
+        el._smoothAnim = null;
+      }
+    }
+    el._smoothAnim = requestAnimationFrame(step);
+  }
+  function findScrollContainer(elem) {
+    while (elem && elem !== document && elem !== document.body) {
+      if (1 === elem.nodeType) {
+        if (elem.classList && (
+          elem.classList.contains("scrollable") ||
+          elem.classList.contains("catalog-rail") ||
+          elem.classList.contains("home-page") ||
+          elem.classList.contains("pc-list") ||
+          elem.classList.contains("pcat-grid") ||
+          elem.classList.contains("search-results") ||
+          elem.classList.contains("search-grid") ||
+          elem.classList.contains("search-suggestions") ||
+          elem.classList.contains("settings-right") ||
+          elem.classList.contains("settings-body") ||
+          elem.classList.contains("psv-scroll") ||
+          elem.classList.contains("dps-body") ||
+          elem.classList.contains("pe-seasons") ||
+          elem.classList.contains("pe-episodes")
+        )) return elem;
+        if (elem.scrollHeight > elem.clientHeight + 4 || elem.scrollWidth > elem.clientWidth + 4) {
+          var sy = window.getComputedStyle ? window.getComputedStyle(elem).overflowY : "";
+          var sx = window.getComputedStyle ? window.getComputedStyle(elem).overflowX : "";
+          if (sy === "auto" || sy === "scroll" || sx === "auto" || sx === "scroll") return elem;
+        }
+      }
+      elem = elem.parentNode;
+    }
+    return null;
+  }
   function nt(e) {
-    for (var t = n(e, ".scrollable"); t;) {
+    var cur = e;
+    while (cur) {
+      var t = findScrollContainer(cur.parentNode);
+      if (!t) break;
       var a = e.getBoundingClientRect(),
         i = t.getBoundingClientRect();
-      (a.top < i.top
-        ? (t.scrollTop -= i.top - a.top + 12)
-        : a.bottom > i.bottom && (t.scrollTop += a.bottom - i.bottom + 12),
-        t.scrollWidth > t.clientWidth + 1 &&
-          (a.left < i.left
-            ? (t.scrollLeft -= i.left - a.left + 12)
-            : a.right > i.right && (t.scrollLeft += a.right - i.right + 12)),
-        (t = n(t.parentNode, ".scrollable")));
+      var deltaY = 0, deltaX = 0;
+      if (a.top < i.top + 8) deltaY = -(i.top - a.top + 24);
+      else if (a.bottom > i.bottom - 8) deltaY = a.bottom - i.bottom + 24;
+      if (t.scrollWidth > t.clientWidth + 2) {
+        if (a.left < i.left + 8) deltaX = -(i.left - a.left + 24);
+        else if (a.right > i.right - 8) deltaX = a.right - i.right + 24;
+      }
+      if (deltaX !== 0 || deltaY !== 0) {
+        if (t.classList.contains("catalog-rail") && deltaX !== 0) {
+          /* Riel horizontal de catalogo usa revealRailCard */
+        } else {
+          var targetX = deltaX !== 0 ? Math.max(0, t.scrollLeft + deltaX) : null;
+          var targetY = deltaY !== 0 ? Math.max(0, t.scrollTop + deltaY) : null;
+          smoothScroll(t, targetX, targetY, 190);
+        }
+      }
+      cur = t;
     }
   }
   function rt(e, a) {
@@ -1442,6 +1574,294 @@
     for (var t = e.querySelectorAll(".focusable"), a = 0; a < t.length; a++)
       if (at(t[a])) return t[a];
     return null;
+  }
+  /* =========================================================================
+     DialogManager: Nucleo unificado de gestion de dialogos y modales (ES5)
+     - Pila LIFO determinista con validacion de dialogId al cerrar (S1).
+     - Restauracion de foco con X.focus, rt() y at() (S2).
+     - Procesamiento unificado de Back con prevencion de doble cierre (S3).
+     - Validacion de conectividad, visibilidad y navegabilidad (S4).
+     - Prevencion de duplicados y limpieza estricta de referencias DOM (S5).
+     - Compatible con ES5 puro y Chromium 53 (S7).
+     ========================================================================= */
+  var DialogManager = (function () {
+    var stack = [];
+    var lastBackTime = 0;
+    var BACK_DEBOUNCE_MS = 220;
+
+    var isConnected = function (elem) {
+      if (!elem) return false;
+      var curr = elem;
+      while (curr) {
+        if (curr === document || curr === document.documentElement) return true;
+        curr = curr.parentNode;
+      }
+      return false;
+    };
+
+    var isDescendant = function (parent, child) {
+      if (!parent || !child) return false;
+      var curr = child;
+      while (curr) {
+        if (curr === parent) return true;
+        curr = curr.parentNode;
+      }
+      return false;
+    };
+
+    var isNavigable = function (elem) {
+      if (!elem || !isConnected(elem)) return false;
+      if (elem.offsetWidth < 1 || elem.offsetHeight < 1 || null === elem.offsetParent) return false;
+      if (stack.length > 0) {
+        var top = stack[stack.length - 1];
+        if (top && top.el) {
+          return isDescendant(top.el, elem);
+        }
+      }
+      if (typeof at === "function") {
+        return at(elem);
+      }
+      return true;
+    };
+
+    var purgeDeadEntries = function () {
+      var i = stack.length;
+      while (i--) {
+        var entry = stack[i];
+        if (entry.el && !isConnected(entry.el)) {
+          if (entry.onClose && typeof entry.onClose === "function") {
+            try {
+              entry.onClose();
+            } catch (err) {}
+          }
+          entry.el = null;
+          entry.returnFocus = null;
+          entry.initialFocus = null;
+          entry.fallbackFocus = null;
+          entry.canClose = null;
+          entry.onClose = null;
+          stack.splice(i, 1);
+        }
+      }
+    };
+
+    var findActiveFallback = function () {
+      if (stack.length > 0) {
+        var top = stack[stack.length - 1];
+        if (top && top.el && isConnected(top.el)) {
+          var inside = top.el.querySelectorAll(".focusable");
+          for (var j = 0; j < inside.length; j++) {
+            if (isNavigable(inside[j])) return inside[j];
+          }
+        }
+      }
+      var screenId = X && X.screen ? "screen-" + X.screen : "";
+      var screenElem = screenId ? (t(screenId) || document.getElementById(screenId)) : null;
+      if (typeof ot === "function" && screenElem) {
+        var f = ot(screenElem);
+        if (f) return f;
+      }
+      var root = screenElem || document.documentElement || document;
+      if (root && root.querySelectorAll) {
+        var focusables = root.querySelectorAll(".focusable");
+        for (var k = 0; k < focusables.length; k++) {
+          if (isNavigable(focusables[k])) return focusables[k];
+        }
+      }
+      return null;
+    };
+
+    var restoreFocus = function (target, customFallback) {
+      var elem = target;
+      if (elem && isNavigable(elem)) {
+        if (typeof rt === "function") {
+          rt(elem);
+        } else if (elem.focus) {
+          elem.focus();
+        }
+        return true;
+      }
+      if (customFallback) {
+        var cElem = typeof customFallback === "function" ? customFallback() : customFallback;
+        if (cElem && isNavigable(cElem)) {
+          if (typeof rt === "function") {
+            rt(cElem);
+          } else if (cElem.focus) {
+            cElem.focus();
+          }
+          return true;
+        }
+      }
+      var fallback = findActiveFallback();
+      if (fallback) {
+        if (typeof rt === "function") {
+          rt(fallback);
+        } else if (fallback.focus) {
+          fallback.focus();
+        }
+        return true;
+      }
+      return false;
+    };
+
+    return {
+      open: function (dialogId, element, options) {
+        if (!dialogId || !element) return false;
+        purgeDeadEntries();
+
+        for (var i = 0; i < stack.length; i++) {
+          if (stack[i].id === dialogId) {
+            stack[i].el = element;
+            if (options) {
+              if (options.onClose) stack[i].onClose = options.onClose;
+              if (options.initialFocus) stack[i].initialFocus = options.initialFocus;
+              if (options.returnFocus) stack[i].returnFocus = options.returnFocus;
+              if (options.fallbackFocus) stack[i].fallbackFocus = options.fallbackFocus;
+            }
+            if (!element.classList.contains("is-active")) {
+              element.classList.add("is-active");
+            }
+            var initFocus = options && options.initialFocus ? options.initialFocus : null;
+            if (initFocus && isNavigable(initFocus)) {
+              if (typeof rt === "function") rt(initFocus);
+            }
+            return true;
+          }
+        }
+
+        var returnElem = null;
+        if (options && options.returnFocus) {
+          returnElem = options.returnFocus;
+        } else if (X && X.focus && isConnected(X.focus)) {
+          returnElem = X.focus;
+        } else if (document.activeElement && isConnected(document.activeElement)) {
+          returnElem = document.activeElement;
+        }
+
+        var entry = {
+          id: dialogId,
+          el: element,
+          returnFocus: returnElem,
+          fallbackFocus: options && options.fallbackFocus ? options.fallbackFocus : null,
+          canClose: options && options.canClose ? options.canClose : null,
+          onClose: options && options.onClose ? options.onClose : null,
+          initialFocus: options && options.initialFocus ? options.initialFocus : null
+        };
+
+        stack.push(entry);
+        element.classList.add("is-active");
+
+        if (entry.initialFocus && isNavigable(entry.initialFocus)) {
+          if (typeof rt === "function") rt(entry.initialFocus);
+        } else {
+          var firstInModal = element.querySelectorAll(".focusable");
+          for (var m = 0; m < firstInModal.length; m++) {
+            if (isNavigable(firstInModal[m])) {
+              if (typeof rt === "function") rt(firstInModal[m]);
+              break;
+            }
+          }
+        }
+
+        return true;
+      },
+
+      close: function (dialogId, skipFocusRestoration) {
+        purgeDeadEntries();
+        if (stack.length === 0) return false;
+
+        var top = stack[stack.length - 1];
+
+        if (dialogId !== void 0 && dialogId !== null && top.id !== dialogId) {
+          return false;
+        }
+
+        if (top.canClose && typeof top.canClose === "function") {
+          try {
+            if (!top.canClose()) return false;
+          } catch (err) {}
+        }
+
+        var popped = stack.pop();
+        if (popped.el) {
+          popped.el.classList.remove("is-active");
+        }
+
+        if (popped.onClose && typeof popped.onClose === "function") {
+          try {
+            popped.onClose();
+          } catch (err) {
+            console.error("[DialogManager] error en onClose:", err);
+          }
+        }
+
+        var targetToRestore = popped.returnFocus;
+        var fallbackTarget = popped.fallbackFocus;
+
+        popped.el = null;
+        popped.returnFocus = null;
+        popped.initialFocus = null;
+        popped.fallbackFocus = null;
+        popped.canClose = null;
+        popped.onClose = null;
+
+        if (!skipFocusRestoration) {
+          restoreFocus(targetToRestore, fallbackTarget);
+        }
+        return true;
+      },
+
+      handleBack: function () {
+        purgeDeadEntries();
+        if (stack.length === 0) return false;
+
+        var now = Date.now ? Date.now() : new Date().getTime();
+        if (now - lastBackTime < BACK_DEBOUNCE_MS) {
+          return true;
+        }
+        lastBackTime = now;
+
+        return this.close();
+      },
+
+      isOpen: function (dialogId) {
+        if (!dialogId) return stack.length > 0;
+        for (var i = 0; i < stack.length; i++) {
+          if (stack[i].id === dialogId) return true;
+        }
+        return false;
+      },
+
+      getActiveDialog: function () {
+        return stack.length > 0 ? stack[stack.length - 1] : null;
+      },
+
+      getStackCount: function () {
+        return stack.length;
+      },
+
+      restoreFocus: restoreFocus,
+      isNavigable: isNavigable,
+      isConnected: isConnected,
+
+      reset: function () {
+        while (stack.length > 0) {
+          var p = stack.pop();
+          if (p.el) p.el.classList.remove("is-active");
+          p.el = null;
+          p.returnFocus = null;
+          p.initialFocus = null;
+          p.fallbackFocus = null;
+          p.canClose = null;
+          p.onClose = null;
+        }
+        lastBackTime = 0;
+      }
+    };
+  })();
+  window.DialogManager = DialogManager;
+  if (typeof X !== "undefined") {
+    X.dialogManager = DialogManager;
   }
   function st(e) {
     if (X.focus) {
@@ -1504,7 +1924,7 @@
             y < d && ((d = y), (l = p));
           }
         }
-        l ? rt(l) : "left" === e && t && Ue[X.tab] && rt(Ue[X.tab]);
+        l ? rt(l) : ("left" === e || "up" === e) && t && Ue[X.tab] && rt(Ue[X.tab]);
       }
     } else {
       var b = it();
@@ -1512,6 +1932,9 @@
     }
   }
   function lt(e) {
+    if ("player" !== e && (X.channelsOpen || (Se && Se.classList.contains("is-active")))) {
+      ro();
+    }
     for (var a = document.querySelectorAll(".screen"), i = 0; i < a.length; i++)
       a[i].classList.remove("is-active");
     var n = t("screen-" + e);
@@ -1522,6 +1945,11 @@
       "player" !== e && X.categoryPickerOpen && ur(!0),
       "player" !== e && "detail" !== e)
     ) {
+      var detScreen = t("screen-detail");
+      if (detScreen) {
+        detScreen.style.backgroundImage = "none";
+        detScreen.classList.remove("is-synopsis-open");
+      }
       (ji && tr(), zi && On());
       var r = t("screen-player");
       (r && (r.classList.remove("is-mini"), r.classList.remove("is-active")),
@@ -1542,16 +1970,15 @@
         else {
           if (catalogFilterDialog) return void closeCatalogFilter();
           if (liveFavoritePrompt) return void closeLiveFavoriteConfirm();
+          if (X.categoryPickerOpen) return ((dt = Date.now()), void ur());
           if ("player" === X.screen)
             return Ye
               ? void Ur(!1)
               : liveSearchOpen
                 ? void closeLiveChannelSearch()
-              : X.categoryPickerOpen
-                ? ((dt = Date.now()), void ur())
-                : X.episodeBrowserOpen
-                  ? ((dt = Date.now()), void zn())
-                  : zi
+              : X.episodeBrowserOpen
+                ? ((dt = Date.now()), void zn())
+                : zi
                     ? void On()
                     : void (X.channelsOpen
                         ? ro()
@@ -1570,6 +1997,11 @@
                                     a.classList.add("is-active")),
                                     i && i.classList.add("is-active"),
                                     (X.screen = "detail"));
+                                  if (xe && !xe.paused) {
+                                    try {
+                                      xe.pause();
+                                    } catch (errPause) {}
+                                  }
                                   var n = !1;
                                   if (X.detailNeedsRebuild && X.detail) {
                                     ((X.detailNeedsRebuild = !1),
@@ -1624,12 +2056,30 @@
               if (homeTarget) rt(homeTarget);
               return;
             }
-            if ("settings" === X.screen)
+            if ("settings" === X.screen) {
+              var inRight = X.focus && (function (elem) {
+                while (elem && elem !== document && elem !== document.body) {
+                  if (elem.id === "settings-right" || (elem.classList && (elem.classList.contains("settings-right") || elem.classList.contains("settings-panel")))) return elem;
+                  elem = elem.parentNode;
+                }
+                return null;
+              })(X.focus);
+              if (inRight) {
+                var menuTarget = document.querySelector(".settings-item.is-selected") ||
+                                 (je && je[0]) ||
+                                 (t("settings-menu") && t("settings-menu").querySelector(".focusable")) ||
+                                 null;
+                if (menuTarget) {
+                  rt(menuTarget);
+                  return;
+                }
+              }
               return (
                 lt("home"),
                 bt(X.tab, !1),
                 void (Ue[X.tab] && rt(Ue[X.tab]))
               );
+            }
             if ("home" === X.screen) {
               if (0 !== X.tab) return (bt(0, !0), void (Ue[0] && rt(Ue[0])));
               window.webOSTV && window.webOSTV.platformBack
@@ -1639,6 +2089,10 @@
                   window.PalmSystem.platformBack();
             }
           } else {
+            if (DialogManager && DialogManager.isOpen("seasonPopup")) {
+              DialogManager.close("seasonPopup");
+              return;
+            }
             if (xa) {
               Ta();
               var a = de ? de.querySelector(".detail-season") : null;
@@ -1654,6 +2108,10 @@
                 var i = document.querySelector(".detail-more");
                 i && (i.textContent = a ? "Menos" : "Más");
               })();
+            if (i) {
+              i.style.backgroundImage = "none";
+              i.classList.remove("is-synopsis-open");
+            }
             zr();
             var n = t("screen-player");
             n &&
@@ -1718,6 +2176,31 @@
       i = !0;
     if ("welcome" === X.screen)
       return (vt(), void (e.preventDefault && e.preventDefault()));
+    if (window.DialogManager && window.DialogManager.isOpen("urlKeyboard")) {
+      if (461 === t || 27 === t || "Back" === a || "GoBack" === a || "Escape" === a) {
+        lastBackKeyDown = Date.now();
+        dt = Date.now() + 250;
+        closeUrlKeyboard(!1);
+        return void (e.preventDefault && e.preventDefault());
+      }
+      if (8 === t || "Backspace" === a) {
+        if (urlKbCurrentText && urlKbCurrentText.length > 0) {
+          urlKbCurrentText = urlKbCurrentText.slice(0, -1);
+          updateUrlKbDisplay();
+        }
+        return void (e.preventDefault && e.preventDefault());
+      }
+      if (a && a.length === 1 && t !== 13 && t !== 32 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        urlKbCurrentText += a;
+        updateUrlKbDisplay();
+        return void (e.preventDefault && e.preventDefault());
+      }
+      if (32 === t) {
+        urlKbCurrentText += " ";
+        updateUrlKbDisplay();
+        return void (e.preventDefault && e.preventDefault());
+      }
+    }
     if ("search" === X.screen && !e.ctrlKey && !e.altKey && !e.metaKey) {
       if (8 === t || "Backspace" === a) {
         if (X.searchQuery && X.searchQuery.length > 0) {
@@ -1761,6 +2244,49 @@
       if (homeTarget) rt(homeTarget);
       return;
     }
+    if ("settings" === X.screen && (461 === t || 27 === t || 8 === t || "Back" === a || "GoBack" === a || "Escape" === a)) {
+      lastBackKeyDown = Date.now();
+      if (DialogManager && DialogManager.isOpen()) {
+        dt = Date.now() + 250;
+        var handled = DialogManager.handleBack();
+        if (handled) {
+          e.preventDefault && e.preventDefault();
+          e.stopPropagation && e.stopPropagation();
+          return;
+        }
+      }
+      var inRight = X.focus && (function (elem) {
+        while (elem && elem !== document && elem !== document.body) {
+          if (elem.id === "settings-right" || (elem.classList && (elem.classList.contains("settings-right") || elem.classList.contains("settings-panel")))) return elem;
+          elem = elem.parentNode;
+        }
+        return null;
+      })(X.focus);
+      if (inRight) {
+        e.preventDefault && e.preventDefault();
+        e.stopPropagation && e.stopPropagation();
+        dt = Date.now() + 250;
+        lastBackKeyDown = Date.now();
+        var menuTarget = document.querySelector(".settings-item.is-selected") ||
+                         (je && je[0]) ||
+                         (t("settings-menu") && t("settings-menu").querySelector(".focusable")) ||
+                         null;
+        if (menuTarget) {
+          rt(menuTarget);
+          return;
+        }
+      }
+      e.preventDefault && e.preventDefault();
+      e.stopPropagation && e.stopPropagation();
+      dt = Date.now() + 250;
+      lastBackKeyDown = Date.now();
+      lt("home");
+      var destTab = (typeof X.tab === "number" && X.tab >= 0) ? X.tab : 0;
+      bt(destTab, !1);
+      var homeTarget = (Ue && Ue[destTab]) || (Ue && Ue[0]) || ot(t("screen-home"));
+      if (homeTarget) rt(homeTarget);
+      return;
+    }
     if (
       461 === t ||
       27 === t ||
@@ -1770,6 +2296,15 @@
       "Escape" === a
     ) {
       lastBackKeyDown = Date.now();
+      if (DialogManager && DialogManager.isOpen()) {
+        dt = Date.now() + 250;
+        var handled = DialogManager.handleBack();
+        if (handled) {
+          e.preventDefault && e.preventDefault();
+          e.stopPropagation && e.stopPropagation();
+          return;
+        }
+      }
       return Ht
         ? ((dt = Date.now()),
           la(),
@@ -2225,9 +2760,10 @@
           ((Ot = document.createElement("video")).className =
             "live-preview-video"),
           (Ot.preload = "auto"),
-          (Ot.muted = !0),
-          (Ot.volume = 0),
-          Ot.setAttribute("muted", "muted"),
+          (Ot.muted = !1),
+          (Ot.volume = 1),
+          (Ot.autoplay = !0),
+          Ot.removeAttribute("muted"),
           Ot.setAttribute("playsinline", ""),
           Ot.setAttribute("webkit-playsinline", ""),
           ie.appendChild(Ot),
@@ -2239,10 +2775,26 @@
         var a = e("div", "live-info");
         (((ae = e("div", "live-channel")).style.right = "112.5px"),
           a.appendChild(ae));
-        var i = e("div", "live-fullscreen");
+        var i = e("div", "live-fullscreen focusable");
         ((i._activate = function () {
           Yr("live");
+          ro();
         }),
+          (i._onMove = function (e) {
+            if ("down" === e) {
+              var btn = document.querySelector(".live-fast .fast-btn");
+              return btn ? (rt(btn), !0) : !1;
+            }
+            if ("right" === e) {
+              var cRow = Fe.filter(function (el) { return el._channel === X.channel; })[0] || Fe[0];
+              return cRow ? (rt(cRow), !0) : !1;
+            }
+            if ("up" === e) {
+              return Ue[0] ? (rt(Ue[0]), !0) : !1;
+            }
+            return !1;
+          }),
+          bindMagicActivate(i),
           a.appendChild(i),
           ie.appendChild(a));
         var n = e("div", "live-arrow-up"),
@@ -2253,13 +2805,16 @@
             var a = e("div", "live-fast"),
               i = e("button", "fast-btn f-srch focusable"),
               r = e("button", "fast-btn f-fav focusable"),
-              o = e("button", "fast-btn f-all focusable");
+              o = e("button", "fast-btn f-all focusable"),
+              c = e("button", "fast-btn f-cat focusable");
             (i.setAttribute("aria-label", "Buscar canal"),
               r.setAttribute("aria-label", "Canales favoritos"),
               o.setAttribute("aria-label", "Todos los canales"),
+              c.setAttribute("aria-label", "Categorías de canales"),
               (i.innerHTML = '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="13" cy="13" r="8" fill="none" stroke="currentColor" stroke-width="3"/><path d="M19 19l8 8" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg><span>Buscar</span>'),
               (r.innerHTML = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3l4 8 9 1-6.5 6 1.7 9L16 22.5 7.8 27l1.7-9L3 12l9-1z" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/></svg><span>Favoritos</span>'),
               (o.innerHTML = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 16h18M16 7v18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" stroke-width="2"/></svg><span>Todos</span>'),
+              (c.innerHTML = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 8h22M5 16h22M5 24h22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="11" cy="8" r="3" fill="currentColor"/><circle cx="22" cy="16" r="3" fill="currentColor"/><circle cx="15" cy="24" r="3" fill="currentColor"/></svg><span>Categorías</span>'),
               r.classList.toggle("is-active", liveFavoritesOnly),
               (i._activate = function () {
                 Yr("live");
@@ -2270,19 +2825,23 @@
                 liveFavoritesOnly = !liveFavoritesOnly;
                 syncLiveFavoriteButtons();
                 Qt(liveFavoritesOnly);
-                Yt(liveFavoritesOnly ? "★ Mostrando canales favoritos" : "Mostrando todos los canales");
+                Yt(liveFavoritesOnly ? "Mostrando canales favoritos" : "Mostrando todos los canales");
                 rt(r);
               }),
               (o._activate = function () {
                 selectAllLiveChannels(o);
               }),
+              (c._activate = function () {
+                pr(c);
+              }),
               (i._onMove = function (e) {
                 if ("right" === e) return (rt(r), !0);
                 if ("up" === e) {
-                  var sTarget = te ? (te.querySelector(".notify-item.search") || te.querySelector(".notify-item")) : null;
-                  return sTarget ? (rt(sTarget), !0) : !0;
+                  var fs = document.querySelector(".live-info .live-fullscreen");
+                  if (fs) return (rt(fs), !0);
+                  return (Ue[0] ? rt(Ue[0]) : !0, !0);
                 }
-                if ("left" === e) return (ne ? rt(ne) : Ue[0] && rt(Ue[0]), !0);
+                if ("left" === e) return !0;
                 if ("down" === e) {
                   var t = Fe.filter(function (e) {
                     return e._channel === X.channel;
@@ -2295,8 +2854,9 @@
                 if ("left" === e) return (rt(i), !0);
                 if ("right" === e) return (rt(o), !0);
                 if ("up" === e) {
-                  var fTarget = te ? (te.querySelector(".notify-item.filter") || te.querySelector(".notify-item.search") || te.querySelector(".notify-item")) : null;
-                  return fTarget ? (rt(fTarget), !0) : !0;
+                  var fs = document.querySelector(".live-info .live-fullscreen");
+                  if (fs) return (rt(fs), !0);
+                  return (Ue[0] ? rt(Ue[0]) : !0, !0);
                 }
                 if ("down" === e) {
                   var t = Fe.filter(function (e) {
@@ -2308,10 +2868,30 @@
               }),
               (o._onMove = function (e) {
                 if ("left" === e) return (rt(r), !0);
-                if ("right" === e) return !0;
+                if ("right" === e) return (rt(c), !0);
                 if ("up" === e) {
-                  var pTarget = te ? (te.querySelector(".notify-item.personal") || te.querySelector(".notify-item")) : null;
-                  return pTarget ? (rt(pTarget), !0) : !0;
+                  var fs = document.querySelector(".live-info .live-fullscreen");
+                  if (fs) return (rt(fs), !0);
+                  return (Ue[0] ? rt(Ue[0]) : !0, !0);
+                }
+                if ("down" === e) {
+                  var t = Fe.filter(function (e) {
+                    return e._channel === X.channel;
+                  })[0];
+                  return (t ? rt(t) : Fe[0] && rt(Fe[0]), !0);
+                }
+                return !1;
+              }),
+              (c._onMove = function (e) {
+                if ("left" === e) return (rt(o), !0);
+                if ("right" === e) {
+                  var cRow = Fe.filter(function (el) { return el._channel === X.channel; })[0] || Fe[0];
+                  return (cRow ? rt(cRow) : !0, !0);
+                }
+                if ("up" === e) {
+                  var fs = document.querySelector(".live-info .live-fullscreen");
+                  if (fs) return (rt(fs), !0);
+                  return (Ue[0] ? rt(Ue[0]) : !0, !0);
                 }
                 if ("down" === e) {
                   var t = Fe.filter(function (e) {
@@ -2324,9 +2904,11 @@
               bindMagicActivate(i),
               bindMagicActivate(r),
               bindMagicActivate(o),
+              bindMagicActivate(c),
               a.appendChild(i),
               a.appendChild(r),
               a.appendChild(o),
+              a.appendChild(c),
               t.appendChild(a));
           })(),
           (re = e("div", "live-list scrollable")),
@@ -2477,7 +3059,22 @@
       },
     ],
     ht = {},
-    homeClockTimer = null;
+    homeClockTimer = null,
+    tabSwitchTimer = null;
+  function scheduleTabSwitch(idx) {
+    if (tabSwitchTimer) {
+      clearTimeout(tabSwitchTimer);
+      tabSwitchTimer = null;
+    }
+    for (var n = 0; n < Ue.length; n++) {
+      Ue[n].classList.toggle("is-selected", n === idx);
+    }
+    if (z[idx] && z[idx].action) return;
+    tabSwitchTimer = setTimeout(function () {
+      tabSwitchTimer = null;
+      bt(idx, !1);
+    }, 260);
+  }
   function mt(e) {
     !ht[e] && He[e] && ft[e] && ((ht[e] = !0), ft[e](He[e]));
   }
@@ -2499,7 +3096,23 @@
           i.classList.add("scrollable"),
           i.classList.add("is-expanded"),
           (Ue = []));
+        var railBrand = e("div", "tabs-brand"),
+          railMark = e("div", "tabs-mark"),
+          markImg = e("img", "tabs-mark-img"),
+          railText = e("div", "tabs-brand-text");
+        markImg.src = "images/logo-mark.png";
+        markImg.alt = "Xuper";
+        railMark.appendChild(markImg);
+        (railText.appendChild(e("div", "tabs-word", "XUPER PORT WEBOS")),
+          railText.appendChild(e("div", "tabs-tag", "Por CristiancoDEV")),
+          railBrand.appendChild(railMark),
+          railBrand.appendChild(railText),
+          i.appendChild(railBrand));
         for (var n = 0; n < z.length; n++) {
+          (0 === n && i.appendChild(e("div", "tabs-group", "En vivo")),
+            1 === n && i.appendChild(e("div", "tabs-group", "Explorar")),
+            "history" === z[n].action &&
+              i.appendChild(e("div", "tabs-group", "Tu biblioteca")));
           var r = e("div", "tab-item focusable");
           r.appendChild(e("div", "tab-pill"));
           var o = e("div", "tab-icon");
@@ -2511,7 +3124,10 @@
               return function () {
                 if ("history" === z[e].action)
                   return ((We = "history"), Ha(), void Ua(1, !0));
-                if ((bt(e, !1), 0 === e)) {
+                if (X.tab !== e) {
+                  bt(e, !1);
+                }
+                if (0 === e) {
                   var t = Fe.filter(function (e) {
                     return e._channel === X.channel;
                   })[0];
@@ -2524,23 +3140,31 @@
             })(n)),
             (r._onMove = (function (e) {
               return function (t) {
-                if ("up" === t)
-                  return (
-                    e > 0 && Ue[e - 1] && (rt(Ue[e - 1]), bt(e - 1, !1)),
-                    !0
-                  );
-                if ("down" === t)
-                  return (
-                    e < Ue.length - 1 &&
-                      Ue[e + 1] &&
-                      (rt(Ue[e + 1]), bt(e + 1, !1)),
-                    !0
-                  );
-                if ("left" === t) return !0;
+                if ("left" === t) {
+                  if (e > 0 && Ue[e - 1]) {
+                    rt(Ue[e - 1]);
+                    return !0;
+                  }
+                  return !0;
+                }
                 if ("right" === t) {
+                  if (e < Ue.length - 1 && Ue[e + 1]) {
+                    rt(Ue[e + 1]);
+                    return !0;
+                  }
+                  var notify = te ? te.querySelector(".notify-item") : null;
+                  if (notify) {
+                    return (rt(notify), !0);
+                  }
+                  return !0;
+                }
+                if ("down" === t) {
                   if ("history" === z[e].action)
                     return ((We = "history"), Ha(), Ua(1, !0), !0);
-                  if ((bt(e, !1), 0 === e)) {
+                  if (X.tab !== e) {
+                    bt(e, !1);
+                  }
+                  if (0 === e) {
                     var a = Fe.filter(function (e) {
                       return e._channel === X.channel;
                     })[0];
@@ -2551,6 +3175,7 @@
                   }
                   return !0;
                 }
+                if ("up" === t) return !0;
                 return !1;
               };
             })(n)),
@@ -2564,18 +3189,21 @@
           var t = [
               {
                 cls: "search",
-                icon: "assets/original/home/icon_notify_search.png",
-                small: !0,
+                /* SVG en lugar de PNG: los iconos de mapa de bits del APK
+                   quedaban casi invisibles en paneles de TV y se perdían al
+                   escalar. El trazo hereda currentColor. */
+                svg: '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="14" cy="14" r="8.5" fill="none" stroke="currentColor" stroke-width="2.8"/><path d="M20.5 20.5L28 28" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>',
+                label: "Buscar",
               },
               {
                 cls: "filter",
-                icon: "assets/original/search/icon_category_filter_n.png",
-                small: !0,
+                svg: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 9h22M5 16h22M5 23h22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><circle cx="11" cy="9" r="3.2" fill="currentColor"/><circle cx="22" cy="16" r="3.2" fill="currentColor"/><circle cx="15" cy="23" r="3.2" fill="currentColor"/></svg>',
+                label: "Filtrar catálogo",
               },
               {
                 cls: "personal",
-                icon: "assets/original/home/icon_notify_personal.png",
-                small: !0,
+                svg: '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="11" r="5.2" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M6 27c.8-5.8 4.6-8.8 10-8.8S25.2 21.2 26 27" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>',
+                label: "Mi cuenta",
               },
             ],
             i = 0;
@@ -2588,7 +3216,8 @@
               "notify-item focusable " + n.cls + (n.small ? " is-small" : "")
             ),
             o = e("div", "n-normal");
-          ((o.style.backgroundImage = "url(" + n.icon + ")"),
+          ((o.innerHTML = n.svg || ""),
+            n.label && r.setAttribute("aria-label", n.label),
             r.appendChild(o),
             "personal" === n.cls
               ? (r._activate = function () {
@@ -2603,15 +3232,34 @@
                   }),
             (r._onMove = (function (e) {
               return function (t) {
-                if ("left" === t && e > 0) return (rt(te.querySelectorAll(".notify-item")[e - 1]), !0);
-                if ("right" === t && e < 2) return (rt(te.querySelectorAll(".notify-item")[e + 1]), !0);
-                if ("down" === t && 0 === X.tab) {
-                  var fastSrch = document.querySelector(".live-fast .f-srch");
-                  if (fastSrch) return (rt(fastSrch), !0);
-                  var a = Fe.filter(function (e) {
-                    return e._channel === X.channel;
-                  })[0] || Fe[0];
-                  return a ? (rt(a), !0) : !0;
+                if ("left" === t) {
+                  if (e > 0) return (rt(te.querySelectorAll(".notify-item")[e - 1]), !0);
+                  if (Ue && Ue.length) {
+                    var lastIdx = Ue.length - 1;
+                    rt(Ue[lastIdx]);
+                    if (X.tab !== lastIdx) scheduleTabSwitch(lastIdx);
+                    return !0;
+                  }
+                  return !0;
+                }
+                if ("right" === t) {
+                  if (e < 2) return (rt(te.querySelectorAll(".notify-item")[e + 1]), !0);
+                  return !0;
+                }
+                if ("down" === t) {
+                  if (0 === X.tab) {
+                    var fastSrch = document.querySelector(".live-fast .f-srch");
+                    if (fastSrch) return (rt(fastSrch), !0);
+                    var a = Fe.filter(function (e) {
+                      return e._channel === X.channel;
+                    })[0] || Fe[0];
+                    return a ? (rt(a), !0) : !0;
+                  }
+                  if (z[X.tab] && z[X.tab].page >= 0) {
+                    var pageElem = ot(He[z[X.tab].page]);
+                    if (pageElem) return (rt(pageElem), !0);
+                  }
+                  return !0;
                 }
                 return "up" === t;
               };
@@ -2643,7 +3291,11 @@
       e.textContent = i + ":" + r(o) + " " + n;
     }
   }
+  window.switchTab = bt;
   function bt(e, t) {
+    if (X.channelsOpen || (Se && Se.classList.contains("is-active"))) {
+      ro();
+    }
     var a = z[e];
     if (a && !a.action) {
       var i = z[X.tab] ? z[X.tab].page : a.page;
@@ -2651,10 +3303,14 @@
       for (var n = 0; n < Ue.length; n++)
         Ue[n].classList.toggle("is-selected", n === e);
 
-      // Desalojar de memoria el contenido DOM de pestañas VOD inactivas para evitar OOM en webOS
-      if (i > 0 && i !== a.page && He[i]) {
-        clearChildren(He[i]);
-        ht[i] = !1;
+      // Desalojar texturas de imágenes de TODAS las pestañas VOD inactivas de forma segura
+      for (var p = 1; p < He.length; p++) {
+        if (p !== a.page && He[p]) {
+          var oldImgs = He[p].querySelectorAll("img[src]");
+          for (var oi = 0; oi < oldImgs.length; oi++) {
+            oldImgs[oi].removeAttribute("src");
+          }
+        }
       }
 
       (a.page >= 0 && mt(a.page), 0 === a.page ? Wt(F[X.channel]) : jt());
@@ -2669,7 +3325,7 @@
         ),
           setTimeout(function () {
             o.classList.remove("is-entering", "from-left", "from-right");
-          }, 320));
+          }, 180));
       }
       if (t)
         if (0 === a.page) {
@@ -2681,58 +3337,124 @@
           var l = ot(He[a.page]);
           l && rt(l);
         }
-      wt();
+      wt(160);
     }
   }
   var Ct = null;
-  function wt() {
-    (Ct && clearTimeout(Ct),
-      (Ct = setTimeout(function () {
-        ((Ct = null),
-          (function () {
-            /* Las carátulas sólo existen fuera del reproductor. Al pulsar
-               arriba en Modo Fluido, este recorrido cargaba/descargaba todas
-               las imágenes de pantallas ocultas y podía saturar la memoria de
-               TVs lentas (pantalla negra + cierre de la app). */
-            if ("player" === X.screen) return;
-            var root = null;
-            if ("home" === X.screen) {
-              root = document.querySelector(".home-page.is-current");
-            } else if ("detail" === X.screen) {
-              root = t("screen-detail");
-            } else if ("search" === X.screen) {
-              root = t("screen-search");
-            } else if ("section" === X.screen) {
-              root = t("screen-section");
-            } else {
-              root = document.querySelector(".screen.is-active") || document;
+  function wt(delay) {
+    var wait = typeof delay === "number" ? delay : 80;
+    Ct && clearTimeout(Ct);
+    Ct = setTimeout(function () {
+      Ct = null;
+      (function () {
+        /* Las carátulas sólo existen fuera del reproductor. Al pulsar
+           arriba en Modo Fluido, este recorrido cargaba/descargaba todas
+           las imágenes de pantallas ocultas y podía saturar la memoria de
+           TVs lentas (pantalla negra + cierre de la app). */
+        if ("player" === X.screen) return;
+        var root = null;
+        if ("home" === X.screen) {
+          root = document.querySelector(".home-page.is-current");
+        } else if ("detail" === X.screen) {
+          root = t("screen-detail");
+        } else if ("search" === X.screen) {
+          root = t("screen-search");
+        } else if ("section" === X.screen) {
+          root = t("screen-section");
+        } else {
+          root = document.querySelector(".screen.is-active") || document;
+        }
+        if (!root) return;
+
+        var tWin = window.innerWidth || 1920;
+        var aWin = window.innerHeight || 1080;
+        var loadImg = function (img) {
+          if (img && !img.hasAttribute("src")) {
+            img.style.display = "";
+            img.src = img.getAttribute("data-poster-src");
+          }
+        };
+        var evictImg = function (img) {
+          if (img && img.hasAttribute("src")) {
+            img.removeAttribute("src");
+          }
+        };
+
+        // 1. Optimización para rieles (.catalog-rail): culling por fila completa bidireccional
+        var rails = root.querySelectorAll(".catalog-rail");
+        if (rails && rails.length) {
+          var pageScroll = root.scrollTop || 0;
+          var bentos = root.querySelectorAll(".bento img[data-poster-src]");
+          if (pageScroll < 900) {
+            for (var bIdx = 0; bIdx < bentos.length; bIdx++) {
+              loadImg(bentos[bIdx]);
             }
-            if (!root) return;
-            var e = root.querySelectorAll("img[data-poster-src]");
-            var tWin = window.innerWidth || 1920;
-            var aWin = window.innerHeight || 1080;
-            for (var i = 0; i < e.length; i++) {
-              var r = e[i];
-              var o = n(r, ".poster, .bento");
-              var s =
-                o && o.getBoundingClientRect
-                  ? o.getBoundingClientRect()
-                  : null;
-              if (
-                s &&
-                s.bottom > -80 &&
-                s.top < aWin + 180 &&
-                s.right > -80 &&
-                s.left < tWin + 180
-              ) {
-                if (!r.getAttribute("src")) {
-                  r.style.display = "";
-                  r.src = r.getAttribute("data-poster-src");
-                }
+          } else {
+            for (var bIdx2 = 0; bIdx2 < bentos.length; bIdx2++) {
+              evictImg(bentos[bIdx2]);
+            }
+          }
+
+          for (var rIdx = 0; rIdx < rails.length; rIdx++) {
+            var rail = rails[rIdx];
+            var rRect = rail.getBoundingClientRect();
+            // Desalojo activo de memoria si el riel está muy lejos fuera de la vista
+            if (rRect.bottom < -500 || rRect.top > aWin + 800) {
+              var farImgs = rail.querySelectorAll("img[src]");
+              for (var fIdx = 0; fIdx < farImgs.length; fIdx++) {
+                evictImg(farImgs[fIdx]);
+              }
+              continue;
+            }
+            // Fuera de la ventana visible: saltar sin cargar
+            if (rRect.bottom < -80 || rRect.top > aWin + 160) {
+              continue;
+            }
+            var pImgs = rail.querySelectorAll("img[data-poster-src]");
+            var rScroll = rail.scrollLeft || 0;
+            for (var pIdx = 0; pIdx < pImgs.length; pIdx++) {
+              var pImg = pImgs[pIdx];
+              var card = pImg.parentElement;
+              var pLeft = (card && card.offsetLeft) || 0;
+              // Comprobación horizontal rápida
+              if (pLeft + 264 >= rScroll - 80 && pLeft <= rScroll + tWin + 120) {
+                loadImg(pImg);
+              } else if (pLeft + 264 < rScroll - 400 || pLeft > rScroll + tWin + 500) {
+                evictImg(pImg);
               }
             }
-          })());
-      }, 40)));
+          }
+          return;
+        }
+
+        // 2. Fallback universal (Búsqueda, Detalle, Secciones en cuadrícula):
+        var e = root.querySelectorAll("img[data-poster-src]");
+        for (var i = 0; i < e.length; i++) {
+          var r = e[i];
+          var o = n(r, ".poster, .bento");
+          var isBento = o && o.classList.contains("bento");
+          var s =
+            o && o.getBoundingClientRect
+              ? o.getBoundingClientRect()
+              : null;
+          if (
+            isBento ||
+            (s &&
+            s.bottom > -80 &&
+            s.top < aWin + 180 &&
+            s.right > -80 &&
+            s.left < tWin + 180)
+          ) {
+            loadImg(r);
+          } else if (
+            s &&
+            (s.bottom < -400 || s.top > aWin + 600 || s.right < -400 || s.left > tWin + 600)
+          ) {
+            evictImg(r);
+          }
+        }
+      })();
+    }, wait);
   }
   function St(e) {
     if ("home" === X.screen) {
@@ -2774,6 +3496,7 @@
               void (this.src = this.src.replace("https://", "http://"))
             );
           this.style.display = "none";
+          if (l) l.classList.add("is-img-error");
         }),
         l.appendChild(d));
     }
@@ -2785,7 +3508,6 @@
       (l._activate = function () {
         ba(t);
       }),
-      wt(),
       l
     );
   }
@@ -3141,11 +3863,11 @@
     { id: 76183, name: 'Música', code: 'd314839e-b664-11ed-8b54-768dd7bc60d3' },
     { id: 79146, name: 'Infantil', code: '64334F25B2394B11A1FF1B060D6B377C' },
     { id: 79148, name: 'Religioso', code: 'E75C698363490CE8F2441F43FB96E752' },
-    { id: 76192, name: '☆ Desde Internet', code: 'd69d9f50-b664-11ed-8b54-768dd7bc60d3' },
+    { id: 76192, name: 'Desde Internet', code: 'd69d9f50-b664-11ed-8b54-768dd7bc60d3' },
     { id: 76200, name: 'EVENTOS PPV', code: 'da7619a4-b664-11ed-8b54-768dd7bc60d3' },
     { id: 76189, name: '24/7', code: 'd51b21ac-b664-11ed-8b54-768dd7bc60d3' },
     { id: 76208, name: '18+', code: 'ddc200aa-b664-11ed-8b54-768dd7bc60d3' },
-    { id: 'addons', name: '➕ Addons M3U', isAddon: true }
+    { id: 'addons', name: 'Addons M3U', isAddon: true }
   ];
   var Lt = DEFAULT_LIVE_CATEGORIES.slice(),
     Mt = DEFAULT_LIVE_CATEGORIES[0],
@@ -3179,10 +3901,10 @@
     if (!ch) return;
     var isFav = toggleLiveFavorite(ch);
     ch.fav = isFav;
-    Yt(isFav ? "★ Canal añadido a favoritos" : "☆ Canal quitado de favoritos");
+    Yt(isFav ? "Canal añadido a favoritos" : "Canal quitado de favoritos");
     if (rowElem) {
       var star = rowElem.querySelector(".channel-star");
-      if (star) { star.textContent = isFav ? "★" : ""; }
+      if (star) { star.innerHTML = starSvg(isFav); }
     }
     if ("player" === X.screen) {
       hr(channelIndex);
@@ -3281,21 +4003,33 @@
                             ie.classList.remove("is-preview-loading"),
                             void (qt && (qt.textContent = ""))
                           );
-                        ((Ot.onloadeddata = function () {
-                          a === Nt &&
-                            (ie.classList.remove("is-preview-loading"),
-                            ie.classList.add("is-preview-playing"),
-                            qt && (qt.textContent = ""));
-                        }),
-                          (Ot.onerror = function () {
-                            a === Nt &&
-                              (ie.classList.remove(
-                                "is-preview-loading",
-                                "is-preview-playing"
-                              ),
-                              qt && (qt.textContent = ""));
-                          }));
+                        var onStart = function () {
+                          if (a === Nt) {
+                            ie.classList.remove("is-preview-loading");
+                            ie.classList.add("is-preview-playing");
+                            if (qt) qt.textContent = "";
+                          }
+                        };
+                        Ot.onloadeddata = onStart;
+                        Ot.oncanplay = onStart;
+                        Ot.onplaying = onStart;
+                        Ot.ontimeupdate = function () {
+                          if (Ot.currentTime > 0) onStart();
+                        };
+                        Ot.onerror = function () {
+                          if (a === Nt) {
+                            ie.classList.remove(
+                              "is-preview-loading",
+                              "is-preview-playing"
+                            );
+                            if (qt) qt.textContent = "";
+                          }
+                        };
                         try {
+                          Ot.muted = !1;
+                          Ot.volume = 1;
+                          Ot.removeAttribute("muted");
+                          Ot.setAttribute("type", "application/x-mpegurl");
                           ((Ot.src = i), Ot.load());
                           var n = Ot.play();
                           n && n.catch && n.catch(function () {});
@@ -3434,7 +4168,7 @@
                     "player" === X.screen && X.channelsOpen && hr()),
                   F[X.channel] && ae && (ae.textContent = F[X.channel].name),
                   "player" === X.screen && "live" === X.playerMode
-                    ? ao()
+                    ? ((isFirstPage || isLastPage) && ao())
                     : isFirstPage && Wt(F[X.channel]));
               }
               if (
@@ -3471,7 +4205,7 @@
                             })();
                             (i.push({
                               id: "addons",
-                              name: "➕ Addons M3U",
+                              name: "Addons M3U",
                               isAddon: !0,
                             }),
                               (Lt = i),
@@ -3550,9 +4284,9 @@
               isFav = !!(X.liveFavorites[liveChannelKey(F[i])] || F[i].fav),
               star = e(
                 "button",
-                "channel-star focusable" + (isFav ? " is-favorite" : ""),
-                isFav ? "★" : "☆"
+                "channel-star focusable" + (isFav ? " is-favorite" : "")
               );
+            star.innerHTML = starSvg(isFav);
             (n.appendChild(r),
               n.appendChild(o),
               n.appendChild(s),
@@ -3565,7 +4299,10 @@
               })(i)),
               (n._onMove = (function (e, starButton) {
                 return function (t) {
-                  if ("left" === t) return (ne ? rt(ne) : Ue[0] && rt(Ue[0]), !0);
+                  if ("left" === t) {
+                    var fastAll = document.querySelector(".live-fast .f-all") || document.querySelector(".live-fast .fast-btn");
+                    return fastAll ? (rt(fastAll), !0) : (Ue[0] && rt(Ue[0]), !0);
+                  }
                   if ("up" === t) {
                     var channelPos = visible.indexOf(e),
                       previousChannel = channelPos > 0 ? visible[channelPos - 1] : -1,
@@ -3574,10 +4311,7 @@
                       previousRow || (Qt(!!currentFavorites, previousChannel), (previousRow = homeRows[previousChannel]));
                       return previousRow ? (rt(previousRow), !0) : !0;
                     }
-                    var homeToolbar = document.querySelector(
-                      ".live-fast .f-srch"
-                    );
-                    return homeToolbar ? (rt(homeToolbar), !0) : !0;
+                    return (Ue[0] ? rt(Ue[0]) : !0, !0);
                   }
                   if ("down" === t) {
                     var channelPos = visible.indexOf(e),
@@ -3678,7 +4412,7 @@
           i = re.scrollTop;
         (t < i && (i = t),
           t + 100.5 > i + re.clientHeight && (i = t + 100.5 - re.clientHeight),
-          (re.scrollTop = Math.max(0, Math.min(a, i))));
+          smoothScroll(re, null, Math.max(0, Math.min(a, i)), 180));
       }
     }
   }
@@ -3874,27 +4608,60 @@
             ((Bt = !0), ea());
           }),
           d.appendChild(c),
-          d.appendChild(u),
-          rt(c));
+          d.appendChild(u));
+        if (window.DialogManager) {
+          window.DialogManager.open("updateDialog", n, {
+            returnFocus: X.focus,
+            initialFocus: c,
+            canClose: function () {
+              return !zt;
+            },
+            fallbackFocus: function () {
+              if ("home" === X.screen) {
+                var a = document.querySelector(".home-tab.is-selected");
+                if (a && at(a)) return a;
+                return firstFocusable();
+              } else if ("settings" === X.screen) {
+                var s = document.querySelector(".settings-item.is-selected");
+                if (s && at(s)) return s;
+                return firstFocusable();
+              }
+              return null;
+            },
+            onClose: function () {
+              Ut = !1;
+              if (n) n.classList.remove("is-active");
+            }
+          });
+        } else {
+          rt(c);
+        }
       }
     }
   }
-  function ea() {
+  function ea(skipFocus) {
+    if (window.DialogManager && window.DialogManager.isOpen("updateDialog")) {
+      window.DialogManager.close("updateDialog", !!skipFocus);
+      return;
+    }
     Ut = !1;
     var e = t("dialog-update");
-    if ((e && e.classList.remove("is-active"), "home" === X.screen)) {
-      var a = document.querySelector(".home-tab.is-selected");
-      if (a) rt(a);
-      else {
-        var i = firstFocusable();
-        i && rt(i);
-      }
-    } else if ("settings" === X.screen) {
-      var n = document.querySelector(".settings-item.is-selected");
-      if (n) rt(n);
-      else {
-        var r = firstFocusable();
-        r && rt(r);
+    if (e) e.classList.remove("is-active");
+    if (!skipFocus) {
+      if ("home" === X.screen) {
+        var a = document.querySelector(".home-tab.is-selected");
+        if (a) rt(a);
+        else {
+          var i = firstFocusable();
+          i && rt(i);
+        }
+      } else if ("settings" === X.screen) {
+        var n = document.querySelector(".settings-item.is-selected");
+        if (n) rt(n);
+        else {
+          var r = firstFocusable();
+          r && rt(r);
+        }
       }
     }
   }
@@ -4014,16 +4781,41 @@
       15e3
     );
   }
-  function sa() {
+  function sa(returnFocus) {
     Ht = !0;
     var e = t("dialog-addons");
     if (e) {
-      (e.classList.add("is-active"), da());
-      var a = e.querySelector(".focusable");
-      a && rt(a);
+      var ret = returnFocus || X.focus;
+      e.classList.add("is-active");
+      da();
+      var a = t("da-btn-write-url") || t("da-custom-url") || e.querySelector(".focusable");
+      if (window.DialogManager) {
+        window.DialogManager.open("addons", e, {
+          returnFocus: ret,
+          initialFocus: a,
+          fallbackFocus: function () {
+            if (X.channelsOpen && Se) {
+              var btnAddons = Se.querySelector("#pc-btn-addons");
+              if (btnAddons && at(btnAddons)) return btnAddons;
+              if (Ce && at(Ce)) return Ce;
+            }
+            return null;
+          },
+          onClose: function () {
+            Ht = !1;
+            if (e) e.classList.remove("is-active");
+          }
+        });
+      } else {
+        a && rt(a);
+      }
     }
   }
   function la() {
+    if (window.DialogManager && window.DialogManager.isOpen("addons")) {
+      window.DialogManager.close("addons");
+      return;
+    }
     Ht = !1;
     var e = t("dialog-addons");
     if (e && (e.classList.remove("is-active"), X.channelsOpen)) {
@@ -4031,6 +4823,143 @@
       rt(a || Ce);
     }
   }
+  window.openAddonsDialog = sa;
+  window.closeAddonsDialog = la;
+  var urlKbCurrentText = "";
+  var urlKbCallback = null;
+  var urlKbDialogEl = null;
+
+  function updateUrlKbDisplay() {
+    var inp = t("url-kb-input");
+    if (inp) inp.value = urlKbCurrentText;
+  }
+
+  function initUrlKeyboard() {
+    var grid = t("url-kb-grid");
+    if (!grid || grid.children.length > 0) return;
+
+    var rows = [
+      ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "_"],
+      ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "/", ":"],
+      ["a", "s", "d", "f", "g", "h", "j", "k", "l", ".", "?", "="],
+      ["z", "x", "c", "v", "b", "n", "m", "@", "#", "&", "%", "+"],
+      [
+        { label: "https://", val: "https://" },
+        { label: "http://", val: "http://" },
+        { label: ".m3u8", val: ".m3u8" },
+        { label: ".m3u", val: ".m3u" },
+        { label: ".com", val: ".com" },
+        { label: "Espacio", val: " ", cls: "url-kb-key-space" },
+        { label: "Borrar", action: "backspace", cls: "url-kb-key-del" },
+        { label: "Listo", action: "save", cls: "url-kb-key-done" }
+      ]
+    ];
+
+    for (var r = 0; r < rows.length; r++) {
+      var rowEl = e("div", "url-kb-row");
+      for (var c = 0; c < rows[r].length; c++) {
+        var item = rows[r][c];
+        var isObj = typeof item === "object";
+        var label = isObj ? item.label : item;
+        var val = isObj ? item.val : item;
+        var act = isObj ? item.action : null;
+        var extraCls = isObj && item.cls ? (" " + item.cls) : "";
+        var keyBtn = e("button", "url-kb-key focusable" + extraCls, label);
+
+        (function (keyVal, keyAction) {
+          keyBtn._activate = function () {
+            if (keyAction === "backspace") {
+              if (urlKbCurrentText.length > 0) {
+                urlKbCurrentText = urlKbCurrentText.slice(0, -1);
+                updateUrlKbDisplay();
+              }
+            } else if (keyAction === "save") {
+              closeUrlKeyboard(!0);
+            } else if (keyVal) {
+              urlKbCurrentText += keyVal;
+              updateUrlKbDisplay();
+            }
+          };
+          bindMagicActivate(keyBtn);
+        })(val, act);
+
+        rowEl.appendChild(keyBtn);
+      }
+      grid.appendChild(rowEl);
+    }
+
+    var btnBack = t("url-kb-btn-backspace");
+    if (btnBack) {
+      btnBack._activate = function () {
+        if (urlKbCurrentText.length > 0) {
+          urlKbCurrentText = urlKbCurrentText.slice(0, -1);
+          updateUrlKbDisplay();
+        }
+      };
+      bindMagicActivate(btnBack);
+    }
+    var btnClear = t("url-kb-btn-clear");
+    if (btnClear) {
+      btnClear._activate = function () {
+        urlKbCurrentText = "";
+        updateUrlKbDisplay();
+      };
+      bindMagicActivate(btnClear);
+    }
+    var btnSave = t("url-kb-btn-save");
+    if (btnSave) {
+      btnSave._activate = function () {
+        closeUrlKeyboard(!0);
+      };
+      bindMagicActivate(btnSave);
+    }
+    var btnCancel = t("url-kb-btn-cancel");
+    if (btnCancel) {
+      btnCancel._activate = function () {
+        closeUrlKeyboard(!1);
+      };
+      bindMagicActivate(btnCancel);
+    }
+  }
+
+  function openUrlKeyboard(initialValue, onSaveCallback) {
+    urlKbCurrentText = initialValue || "";
+    urlKbCallback = onSaveCallback;
+    urlKbDialogEl = t("dialog-url-kb");
+    initUrlKeyboard();
+    updateUrlKbDisplay();
+    if (urlKbDialogEl) {
+      urlKbDialogEl.classList.add("is-active");
+      var firstKey = urlKbDialogEl.querySelector(".url-kb-key");
+      if (window.DialogManager) {
+        window.DialogManager.open("urlKeyboard", urlKbDialogEl, {
+          returnFocus: X.focus,
+          initialFocus: firstKey,
+          onClose: function () {
+            if (urlKbDialogEl) urlKbDialogEl.classList.remove("is-active");
+          }
+        });
+      } else {
+        firstKey && rt(firstKey);
+      }
+    }
+  }
+
+  function closeUrlKeyboard(save) {
+    if (save && urlKbCallback) {
+      urlKbCallback(urlKbCurrentText);
+    }
+    if (window.DialogManager && window.DialogManager.isOpen("urlKeyboard")) {
+      window.DialogManager.close("urlKeyboard");
+    } else if (urlKbDialogEl) {
+      urlKbDialogEl.classList.remove("is-active");
+      var daInp = t("da-custom-url");
+      if (daInp) rt(daInp);
+    }
+  }
+  window.openUrlKeyboard = openUrlKeyboard;
+  window.closeUrlKeyboard = closeUrlKeyboard;
+
   function da() {
     for (
       var i = t("da-presets-list"),
@@ -4055,7 +4984,7 @@
             s = e(
               "button",
               "da-preset-btn focusable" + (r ? " is-installed" : ""),
-              r ? "✔ Instalado" : "+ Instalar"
+              r ? "Instalado" : "+ Instalar"
             );
           ((s._activate = function () {
             r ||
@@ -4104,6 +5033,23 @@
             "No hay addons personalizados instalados aún. Instala una lista recomendada arriba o escribe una URL."
           )
         );
+    var inpUrl = t("da-custom-url");
+    var btnWrite = t("da-btn-write-url");
+    var handleOpenKb = function () {
+      openUrlKeyboard(inpUrl ? (inpUrl.value || "") : "", function (newUrl) {
+        if (inpUrl) inpUrl.value = newUrl;
+        var btnAdd = t("da-btn-add-custom");
+        if (btnAdd) rt(btnAdd);
+      });
+    };
+    if (inpUrl) {
+      inpUrl._activate = handleOpenKb;
+      bindMagicActivate(inpUrl);
+    }
+    if (btnWrite) {
+      btnWrite._activate = handleOpenKb;
+      bindMagicActivate(btnWrite);
+    }
     var c = t("da-btn-add-custom");
     if (c) {
       c._activate = function () {
@@ -4128,9 +5074,6 @@
       };
       bindMagicActivate(c);
     }
-    /* Al pulsar este campo con el Magic Remote se abre el teclado virtual de
-       webOS. También se puede activar con OK sin perder la navegación D-pad. */
-    bindMagicTextInput(t("da-custom-url"));
     var p = t("da-btn-exit");
     if (p) {
       p._activate = function () {
@@ -4197,14 +5140,14 @@
     });
   }
   var pa = {
-    bigW: 831,
-    bigH: 534,
-    bigY: 38.5,
-    smallW: 413,
-    smallH: 222,
-    smallY: 578.5,
-    bigX: [192, 1029],
-    smallX: [192, 609, 1028, 1446],
+    bigW: 898,
+    bigH: 494,
+    bigY: 20,
+    smallW: 438,
+    smallH: 220,
+    smallY: 532,
+    bigX: [48, 974],
+    smallX: [48, 510, 972, 1434],
   };
   function ua(t, a, n, r, o, s) {
     s = s || {};
@@ -4225,6 +5168,7 @@
               void (this.src = this.src.replace("https://", "http://"))
             );
           this.style.display = "none";
+          if (l) l.classList.add("is-img-error");
         }),
         l.appendChild(c));
     }
@@ -4270,10 +5214,10 @@
             pa.smallY,
             pa.smallW,
             pa.smallH,
-            {}
+            { shade: true, title: true }
           )
         );
-      var dotsContainer = a.dots ? va(848, 535.5, a.dots, 0) : null;
+      var dotsContainer = a.dots ? va(848, 504, a.dots, 0) : null;
       dotsContainer && e.appendChild(dotsContainer);
 
       // Auto-rotación del carrusel bento (dots + tarjeta principal 01)
@@ -4494,16 +5438,16 @@
   }
   function ga(t, a, n, r, sectionInfo, sectionContext, categoryKey) {
     if (!a || !a.length) return n;
-    var o = n || 860,
+    var o = n || 772,
       s = e("div", "kids-subtitle", r || "Catálogo");
-    (i(s, 192, o, 1400, 40), t.appendChild(s), (o += 50));
+    (i(s, 48, o, 1824, 40), t.appendChild(s), (o += 54));
     var l = e("div", "catalog-rail scrollable"),
       d,
       c;
-    i(l, 192, o, 1656, 360);
+    i(l, 48, o, 1824, 380);
     t.appendChild(l);
-    l.style.width = "1656px";
-    l.style.height = "360px";
+    l.style.width = "1824px";
+    l.style.height = "380px";
     l.style.position = "absolute";
     l.style.overflowX = "auto";
     l.style.overflowY = "hidden";
@@ -4511,25 +5455,29 @@
     l.style.scrollbarWidth = "none";
     l.style.webkitOverflowScrolling = "touch";
     l.classList.add("catalog-rail");
-    l.style.minWidth = "1656px";
-    /* Fila estilo XuperTV: como máximo 10 tarjetas y una tarjeta "··· Ver más"
-       que abre la sección completa en su propio explorador de categorías.
-       El retorno al primer elemento del riel se mantiene. */
+    l.style.minWidth = "1824px";
+    var isShort = a.length <= 4;
+    if (isShort) l.classList.add("is-short-rail");
+    /* Fila estilo XuperTV: hasta 10 tarjetas. En rieles cortos (<= 4 o <= MAX_RAIL sin seccion
+       externa), no crear tarjeta redundante "··· Ver mas" que repita los mismos titulos.
+       El retorno al primer elemento del riel se mantiene fluido estilo Netflix. */
     var MAX_RAIL = 10,
-      hasMore = a.length > 0,
+      hasMore = a.length > MAX_RAIL || !!(sectionInfo && sectionInfo.query),
       total = Math.min(a.length, MAX_RAIL) + (hasMore ? 1 : 0),
       revealRailCard = function (rail, card) {
         if (!card) return;
         var left = card.offsetLeft || 0,
-          width = card.offsetWidth || 250,
-          viewport = rail.clientWidth || 1656,
+          width = card.offsetWidth || 244,
+          viewport = rail.clientWidth || 1824,
           current = rail.scrollLeft || 0,
           padding = 38,
           next = current;
         if (left < current + padding) next = Math.max(0, left - padding);
         else if (left + width > current + viewport - padding)
           next = Math.max(0, left + width - viewport + padding);
-        rail.scrollLeft = next;
+        if (next !== current) {
+          smoothScroll(rail, next, null, 200);
+        }
       },
       focusRailCard = function (rail, card) {
         revealRailCard(rail, card);
@@ -4544,6 +5492,7 @@
             }
             if (rail.children[0]) {
               rail.scrollLeft = 0;
+              smoothScroll(rail, 0, null, 240);
               focusRailCard(rail, rail.children[0]);
               return !0;
             }
@@ -4562,7 +5511,7 @@
       };
     d = Math.min(a.length, MAX_RAIL);
     for (c = 0; c < d; c++) {
-      var poster = xt(a[c], 276 * c, 0, 250, 360, { gold: !0 });
+      var poster = xt(a[c], 264 * c, 0, 244, 360, { gold: !0 });
       poster._onMove = railMove(l, c);
       poster._onFocus = (function (rail, card) {
         return function () {
@@ -4573,7 +5522,7 @@
     }
     if (hasMore) {
       var moreCard = e("div", "poster gold focusable see-more");
-      (i(moreCard, 276 * d, 0, 250, 360),
+      (i(moreCard, 264 * d, 0, 244, 360),
         moreCard.appendChild(e("div", "see-more-dots", "···")),
         moreCard.appendChild(e("div", "see-more-label", "Ver más")),
         moreCard.appendChild(
@@ -4771,14 +5720,16 @@
     i(sidebar, 40, 32, 340, 1010);
     scr.appendChild(sidebar);
 
-    var searchBtn = e("div", "section-sidebar-btn focusable", "🔍 Busca");
+    var searchBtn = e("div", "section-sidebar-btn focusable");
+    searchBtn.innerHTML = searchSvg() + "<span>Busca</span>";
     searchBtn._activate = function () {
       X.searchReturn = { screen: "section", focus: searchBtn };
       La();
     };
     sidebar.appendChild(searchBtn);
 
-    var filterBtn = e("div", "section-sidebar-btn focusable", "⚲ Filtrar");
+    var filterBtn = e("div", "section-sidebar-btn focusable");
+    filterBtn.innerHTML = filterSvg() + "<span>Filtrar</span>";
     filterBtn._activate = function () {
       openCatalogFilter(filterBtn);
     };
@@ -4796,7 +5747,7 @@
       if (catList) {
         var top = el.offsetTop || 0;
         var listHeight = catList.clientHeight || 860;
-        catList.scrollTop = Math.max(0, top - Math.floor(listHeight / 2) + 29);
+        smoothScroll(catList, null, Math.max(0, top - Math.floor(listHeight / 2) + 29), 180);
       } else if (el.scrollIntoView) {
         el.scrollIntoView(false);
       }
@@ -5238,21 +6189,22 @@
       Ca(e),
       lt("detail"),
       Ce || lr());
-    var i = t("screen-player");
-    i && (i.classList.add("is-mini"), i.classList.add("is-active"));
+    zr();
+    var screenPlayer = t("screen-player");
+    screenPlayer && (screenPlayer.classList.remove("is-mini"), screenPlayer.classList.remove("is-active"));
     var n = le ? le.querySelector(".focusable") : null;
     if (!n && de) n = de.querySelector(".focusable");
     (n && rt(n),
       e._detailsLoaded
-        ? Jr(e, X.detailEpisode)
-        : (jr("Preparando la reproducción…"),
-          U(e, function (e) {
-            e &&
+        ? void 0
+        : U(e, function (item) {
+            item &&
               "detail" === X.screen &&
-              X.detail === e &&
-              (dn(e), Jr(e, X.detailEpisode));
-          })));
+              X.detail === item &&
+              (dn(item), Ca(item));
+          }));
   }
+  window.openMovieDetail = ba;
   function getBaseSeriesTitle(t) {
     if (!t) return "";
     return t.replace(/\s*(?:T\d+|S\d+|Temporada\s*\d+|Season\s*\d+).*$/i, "").trim().toLowerCase();
@@ -5373,36 +6325,68 @@
     target && rt(target);
   }
   function Ca(n) {
+    if (X.channelsOpen || (Se && Se.classList.contains("is-active"))) {
+      ro();
+    }
     ((oe = t("detail-left")),
       (se = t("detail-player")),
       (le = t("detail-buttons")),
       (de = t("detail-bottom")),
       a(oe),
       a(le),
-      a(de));
+      a(de),
+      a(se));
+
+    var playerBackdropUrl = n.landscape || n.poster || "";
+    var detScreen = t("screen-detail");
+    if (detScreen) {
+      if (playerBackdropUrl) {
+        detScreen.style.backgroundImage =
+          'radial-gradient(circle at 75% 25%, rgba(15,15,15,0.45) 0%, rgba(10,10,10,0.92) 65%, #0a0a0a 100%), linear-gradient(180deg, rgba(10,10,10,0.85) 0%, #0a0a0a 100%), url("' +
+          playerBackdropUrl +
+          '")';
+        detScreen.style.backgroundSize = "cover";
+        detScreen.style.backgroundPosition = "center right";
+      } else {
+        detScreen.style.backgroundImage = "none";
+        detScreen.style.backgroundColor = "#0a0a0a";
+      }
+    }
+
     var r,
       hasDirector = hasDetailCredit(n.director),
       hasActors = hasDetailCredit(n.actors),
       o = e("div", "detail-titlewrap");
-    if (
-      (o.appendChild(e("div", "detail-title", n.title)),
-      o.appendChild(e("div", "detail-score", n.score)),
-      oe.appendChild(o),
-      n.country || n.releaseDate || n.tagline)
-    ) {
-      var s = [];
-      (n.country && s.push(n.country),
-        n.releaseDate && s.push(n.releaseDate),
-        n.tagline && s.push(n.tagline),
-        (r = s.join(" | ")));
-    } else {
-      var d = [];
-      (n.year && "—" !== n.year && d.push(n.year),
-        n.duration && "—" !== n.duration && d.push(n.duration),
-        d.push("HD"),
-        (r = d.join("  ·  ")));
+    o.appendChild(e("div", "detail-title", n.title));
+    if (n.score) {
+      var sc = e("div", "detail-score");
+      sc.innerHTML = '<span class="detail-score-star">' + starSvg(true) + '</span> ' + n.score;
+      o.appendChild(sc);
     }
-    if ((oe.appendChild(e("div", "detail-meta", r)), x(n))) {
+    oe.appendChild(o);
+
+    var metaWrap = e("div", "detail-meta");
+    var metaYear = (n.year && "—" !== n.year) ? n.year : (n.releaseDate ? String(n.releaseDate).substring(0, 4) : "");
+    if (metaYear) {
+      metaWrap.appendChild(e("span", "detail-badge detail-badge-year", metaYear));
+    }
+    var metaDur = (n.duration && "—" !== n.duration) ? n.duration : "";
+    if (metaDur) {
+      var dBadge = e("span", "detail-badge detail-badge-duration");
+      dBadge.innerHTML = '<span class="detail-badge-icon">' + clockSvg() + '</span> ' + metaDur;
+      metaWrap.appendChild(dBadge);
+    }
+    var qBadge = e("span", "detail-badge detail-badge-quality", "4K UHD");
+    metaWrap.appendChild(qBadge);
+    if (n.country && "—" !== n.country) {
+      metaWrap.appendChild(e("span", "detail-badge detail-badge-country", n.country));
+    }
+    oe.appendChild(metaWrap);
+    if (n.tagline && "—" !== n.tagline && n.tagline !== n.title) {
+      oe.appendChild(e("div", "detail-tagline", n.tagline));
+    }
+
+    if (x(n)) {
       var c = 0,
         p = /S(\d+)/i.exec(n.alias || "") || /T(\d+)/i.exec(n.title || "");
       if (
@@ -5415,125 +6399,213 @@
       c || (c = 1);
       var v =
         n.updateCount || n.volumeCount || (n.episodes ? n.episodes.length : 0);
-      v && oe.appendChild(e("div", "detail-update", "T" + c + " - E" + v));
+      v && oe.appendChild(e("div", "detail-update", "Temporada " + c + "  ·  " + v + " Episodios"));
     }
+
     var f = e("div", "detail-genres");
-    f.appendChild(e("span", "label", "Género : "));
-    for (var h = 0; h < n.genres.length; h++) {
+    for (var h = 0; h < (n.genres || []).length; h++) {
       var m = e("div", "chip", n.genres[h]);
       f.appendChild(m);
     }
     oe.appendChild(f);
-    (oe.classList.toggle("has-credits", hasDirector || hasActors),
-      oe.classList.toggle("no-credits", !hasDirector && !hasActors));
-    if (hasDirector) {
-      var g = e("div", "detail-row");
-      g.appendChild(document.createTextNode("Director : "));
-      var y = e("span", "val", n.director);
-      (g.appendChild(y), oe.appendChild(g));
+
+    var w = e("div", "detail-synopsis"),
+      synText = e("div", "text", n.synopsis || "Sin sinopsis disponible.");
+    w.appendChild(synText);
+    if (n.synopsis && n.synopsis.length > 120) {
+      var moreBtn = e("span", "detail-more focusable", "Más");
+      moreBtn._activate = function () {
+        var det = t("screen-detail");
+        if (!det) return;
+        var isOpen = !det.classList.contains("is-synopsis-open");
+        det.classList.toggle("is-synopsis-open", isOpen);
+        moreBtn.textContent = isOpen ? "Menos" : "Más";
+      };
+      w.appendChild(moreBtn);
     }
-    if (hasActors) {
-      var b = e("div", "detail-row");
-      b.appendChild(document.createTextNode("Actors : "));
-      var C = e("span", "val", n.actors);
-      (b.appendChild(C), oe.appendChild(b));
+    oe.appendChild(w);
+
+    if (hasDirector || hasActors) {
+      var cred = e("div", "detail-credits-block");
+      if (hasDirector) {
+        var g = e("div", "detail-row");
+        g.appendChild(e("span", "label", "Director : "));
+        g.appendChild(e("span", "val", n.director));
+        cred.appendChild(g);
+      }
+      if (hasActors) {
+        var b = e("div", "detail-row");
+        b.appendChild(e("span", "label", "Reparto : "));
+        b.appendChild(e("span", "val", n.actors));
+        cred.appendChild(b);
+      }
+      oe.appendChild(cred);
     }
-    var w = e("div", "detail-synopsis");
-    (w.appendChild(e("span", "label", "Sinopsis : ")),
-      w.appendChild(e("div", "text", n.synopsis)));
-    var S = e("div", "detail-more", "Más");
-    (w.appendChild(S),
-      oe.appendChild(w),
-      a(se),
-      se.classList.add("focusable"),
-      (se._activate = function () {
+
+    /* Mini reproductor en pausa con imagen de la peli/serie y botón central para salir en grande */
+    if (se) {
+      a(se);
+      se.style.display = "";
+      se.className = "detail-player focusable";
+      var imgUrl = playerBackdropUrl || n.poster || "";
+      if (imgUrl) {
+        var posterImg = e("img", "detail-player-poster");
+        posterImg.src = imgUrl;
+        posterImg.alt = n.title || "";
+        se.appendChild(posterImg);
+      }
+      var playBtn = e("div", "detail-player-center-btn");
+      playBtn.innerHTML = '<span class="detail-player-icon">' + playSvg() + '</span><span class="detail-player-label">Ver en grande</span>';
+      se.appendChild(playBtn);
+
+      se._activate = function () {
         Kr(n, X.detailEpisode);
-      }),
-      (se._onMove = function () {
-        /* Nunca dejar el foco atrapado en la carátula del reproductor: si el
-           espectador pulsa cualquier dirección, pasa a los botones. */
-        var firstBtn = le && (le.querySelector(".focusable") || ot(le));
-        return firstBtn ? (rt(firstBtn), !0) : !1;
-      }));
+      };
+      se._onMove = function (dir) {
+        if ("left" === dir) {
+          var targetBtn = le ? (le.querySelector(".focusable.is-focused") || le.querySelector(".focusable:last-child") || le.querySelector(".focusable")) : null;
+          return targetBtn ? (rt(targetBtn), !0) : !1;
+        }
+        if ("down" === dir) {
+          var target = de ? (de.querySelector(".detail-season-btn.is-selected") || de.querySelector(".detail-season-btn") || de.querySelector(".detail-episode.is-playing") || de.querySelector(".detail-episode") || de.querySelector(".poster") || ot(de)) : null;
+          return target ? (rt(target), !0) : !1;
+        }
+        return !1;
+      };
+    }
+
     var T = [
       {
-        icon: "icon_detail_fullscreen.png",
-        label: "Pantalla completa",
+        glyph: "play",
+        label: "Reproducir",
         kind: "fullscreen",
       },
       {
-        icon: "icon_detail_subtitle_audio.png",
+        glyph: "audio",
         label: "Idioma",
         kind: "language",
       },
-      { icon: "icon_detail_favorite.png", label: "Favorito", kind: "favorite" },
+      { glyph: "star", label: "Favorito", kind: "favorite" },
     ];
     x(n) &&
       T.push({
-        icon: "icon_detail_subscribe.png",
-        label: "Notificaciones",
+        glyph: "bell",
+        label: "Avisos",
         kind: "subscribe",
       });
+    var detailGlyph = function (kind) {
+      return "play" === kind
+        ? playSvg()
+        : "audio" === kind
+          ? subtitlesSvg()
+          : "star" === kind
+            ? starSvg(true)
+            : "bell" === kind
+              ? bellSvg()
+              : gaugeSvg();
+    };
     for (var _ = 0; _ < T.length; _++) {
       var k = e("div", "detail-btn focusable"),
-        L = e("img");
-      ((L.src = "assets/original/vod/" + T[_].icon),
-        (L.alt = ""),
-        k.appendChild(L),
-        k.appendChild(e("span", null, T[_].label)),
-        (k._kind = T[_].kind),
-        "favorite" === T[_].kind &&
-          X.favs[String(n.id)] &&
-          (k.classList.add("is-selected"),
-          (k.querySelector("span").textContent = "En favoritos")),
-        (k._activate = (function (e, t) {
-          return function () {
-            if ("fullscreen" === e) Kr(t, X.detailEpisode);
-            else if ("language" === e) er(t);
-            else if ("favorite" === e) {
-              var a = Z(t);
-              this.classList.toggle("is-selected", a);
-              var i = this.querySelector("span");
-              i && (i.textContent = a ? "En favoritos" : "Favorito");
-            } else if ("subscribe" === e) {
-              var n = this.querySelector("img"),
-                r = -1 === n.src.indexOf("subscribed");
-              n.src =
-                "assets/original/vod/icon_detail_" +
-                (r ? "subscribed" : "subscribe") +
-                ".png";
+        iconWrap = e("span", "detail-btn-icon");
+      iconWrap.innerHTML = detailGlyph(T[_].glyph);
+      k.appendChild(iconWrap);
+      k.appendChild(e("span", "detail-btn-label", T[_].label));
+      k._kind = T[_].kind;
+      "favorite" === T[_].kind &&
+        X.favs[String(n.id)] &&
+        (k.classList.add("is-selected"),
+        (k.querySelector(".detail-btn-label").textContent = "En favoritos"));
+      (k._activate = (function (e, t) {
+        return function () {
+          if ("fullscreen" === e) Kr(t, X.detailEpisode);
+          else if ("language" === e) er(t);
+          else if ("favorite" === e) {
+            var a = Z(t);
+            this.classList.toggle("is-selected", a);
+            var i = this.querySelector(".detail-btn-label");
+            i && (i.textContent = a ? "En favoritos" : "Favorito");
+          } else if ("subscribe" === e) {
+            this.classList.toggle("is-selected");
+            var subLbl = this.querySelector(".detail-btn-label");
+            subLbl &&
+              (subLbl.textContent = this.classList.contains("is-selected")
+                ? "Avisos activos"
+                : "Avisos");
+          }
+        };
+      })(T[_].kind, n),
+        (k._onMove = function (dir) {
+          if ("down" === dir) {
+            var target = de ? (de.querySelector(".detail-season-btn.is-selected") || de.querySelector(".detail-season-btn") || de.querySelector(".detail-episode.is-playing") || de.querySelector(".detail-episode") || de.querySelector(".poster") || ot(de)) : null;
+            return target ? (rt(target), !0) : !1;
+          }
+          if ("right" === dir) {
+            var nextBtn = this.nextElementSibling;
+            if (nextBtn && nextBtn.classList.contains("focusable")) {
+              rt(nextBtn);
+              return !0;
             }
-          };
-        })(T[_].kind, n)),
+            if (se && se.classList.contains("focusable")) {
+              rt(se);
+              return !0;
+            }
+          }
+          if ("left" === dir) {
+            var prevBtn = this.previousElementSibling;
+            if (prevBtn && prevBtn.classList.contains("focusable")) {
+              rt(prevBtn);
+              return !0;
+            }
+          }
+          return !1;
+        }),
         le.appendChild(k));
     }
     var M = e("div", "detail-btn detail-smooth-toggle focusable"),
-      I = e("img");
-    ((I.src = "assets/original/vod/icon_detail_quality.png"),
-      (I.alt = ""),
-      M.appendChild(I));
+      smoothIcon = e("span", "detail-btn-icon");
+    smoothIcon.innerHTML = gaugeSvg();
+    M.appendChild(smoothIcon);
     var E = e(
       "span",
-      null,
-      "smooth" === X.streamMode ? "Modo fluido: Sí" : "Modo fluido: No"
+      "detail-btn-label",
+      "smooth" === X.streamMode ? "Fluido: Sí" : "Fluido: No"
     );
     (M.appendChild(E),
       (M._activate = function () {
         (Tn(n, "smooth" !== X.streamMode),
           (E.textContent =
-            "smooth" === X.streamMode ? "Modo fluido: Sí" : "Modo fluido: No"));
+            "smooth" === X.streamMode ? "Fluido: Sí" : "Fluido: No"));
+      }),
+      (M._onMove = function (dir) {
+        if ("down" === dir) {
+          var target = de ? (de.querySelector(".detail-season-btn.is-selected") || de.querySelector(".detail-season-btn") || de.querySelector(".detail-episode.is-playing") || de.querySelector(".detail-episode") || de.querySelector(".poster") || ot(de)) : null;
+          return target ? (rt(target), !0) : !1;
+        }
+        if ("right" === dir) {
+          return se && se.classList.contains("focusable") ? (rt(se), !0) : !1;
+        }
+        if ("left" === dir) {
+          var prevBtn = this.previousElementSibling;
+          if (prevBtn && prevBtn.classList.contains("focusable")) {
+            rt(prevBtn);
+            return !0;
+          }
+        }
+        return !1;
       }),
       le.appendChild(M),
       (function (t) {
-        var a = x(t) && t.episodes ? t.episodes : [],
-          n = a.length > 0,
+        var isMovie = (1 === X.tab) || ("movie" === t.type) || ("película" === t.kind) || ("pelicula" === t.category);
+        var isSeries = !isMovie && x(t) && ((t.episodes && t.episodes.length > 1) || (t.seasons && t.seasons.length > 1));
+        var a = isSeries && t.episodes ? t.episodes : [],
+          n = isSeries && a.length > 1,
           r = wa(a.length);
         X.detailRange >= r.length && (X.detailRange = 0);
-        var hasMultiSeasons = x(t) && t.seasons && t.seasons.length > 1;
+        var hasMultiSeasons = isSeries && t.seasons && t.seasons.length > 1;
         var showRanges = !hasMultiSeasons && n && a.length > 20;
         var rangesCont = null;
         var seasonsRail = null;
-        if (x(t)) {
+        if (hasMultiSeasons) {
           if (hasMultiSeasons) {
             seasonsRail = e("div", "detail-seasons-rail scrollable");
             for (var sIdx = 0; sIdx < t.seasons.length; sIdx++) {
@@ -5553,9 +6625,9 @@
                       oLeft = sBtn.offsetLeft,
                       oWidth = sBtn.offsetWidth;
                     if (oLeft < cLeft + 40) {
-                      seasonsRail.scrollLeft = Math.max(0, oLeft - 40);
+                      smoothScroll(seasonsRail, Math.max(0, oLeft - 40), null, 180);
                     } else if (oLeft + oWidth > cLeft + cWidth - 40) {
-                      seasonsRail.scrollLeft = oLeft + oWidth - cWidth + 40;
+                      smoothScroll(seasonsRail, oLeft + oWidth - cWidth + 40, null, 180);
                     }
                   }
                 };
@@ -5574,7 +6646,6 @@
                         X.detailEpisode = t.episodes[0] || null;
                       }
                       Ca(t);
-                      X.detailEpisode && Jr(t, X.detailEpisode);
                       var newRail = de ? de.querySelector(".detail-seasons-rail") : null;
                       var newBtn = newRail ? newRail.children[sNum] : null;
                       newBtn && rt(newBtn);
@@ -5611,15 +6682,11 @@
             }
             de.appendChild(seasonsRail);
           } else {
-            var o = e("div", "detail-season");
-            o.appendChild(e("span", "season-text", "Temporada 1"));
-            de.appendChild(o);
+            /* Serie de temporada única: no agregar botón redundante que choque con rangos */
           }
         }
         if (showRanges) {
           rangesCont = e("div", "detail-ranges scrollable");
-          rangesCont.style.left = x(t) ? "300px" : "80px";
-          rangesCont.style.right = "80px";
           for (var c = 0; c < r.length; c++)
             (function (rangeIdx) {
               var rangeBtn = e(
@@ -5635,9 +6702,9 @@
                     oLeft = rangeBtn.offsetLeft,
                     oWidth = rangeBtn.offsetWidth;
                   if (oLeft < cLeft + 40) {
-                    rangesCont.scrollLeft = Math.max(0, oLeft - 40);
+                    smoothScroll(rangesCont, Math.max(0, oLeft - 40), null, 180);
                   } else if (oLeft + oWidth > cLeft + cWidth - 40) {
-                    rangesCont.scrollLeft = oLeft + oWidth - cWidth + 40;
+                    smoothScroll(rangesCont, oLeft + oWidth - cWidth + 40, null, 180);
                   }
                 }
               };
@@ -5691,7 +6758,7 @@
               epTile.appendChild(e("span", "ep-num", epNum));
               epTile._ep = epData;
               epTile._activate = function () {
-                $n(t, epData);
+                Kr(t, epData);
               };
               epTile._onFocus = function () {
                 if (u) {
@@ -5700,9 +6767,9 @@
                     oLeft = epTile.offsetLeft,
                     oWidth = epTile.offsetWidth;
                   if (oLeft < cLeft + 40) {
-                    u.scrollLeft = Math.max(0, oLeft - 40);
+                    smoothScroll(u, Math.max(0, oLeft - 40), null, 180);
                   } else if (oLeft + oWidth > cLeft + cWidth - 40) {
-                    u.scrollLeft = oLeft + oWidth - cWidth + 40;
+                    smoothScroll(u, oLeft + oWidth - cWidth + 40, null, 180);
                   }
                 }
               };
@@ -5741,7 +6808,7 @@
                     var curRange = rCont ? (rCont.querySelector(".detail-range.is-selected") || rCont.children[X.detailRange] || rCont.children[0]) : null;
                     if (curRange) return (rt(curRange), !0);
                   }
-                  var seasonBtn = de ? (de.querySelector(".detail-season-btn.is-selected") || de.querySelector(".detail-season-btn") || de.querySelector(".detail-season")) : null;
+                  var seasonBtn = de ? (de.querySelector(".detail-season-btn.is-selected") || de.querySelector(".detail-season-btn") || de.querySelector(".detail-range.is-selected") || de.querySelector(".detail-range") || de.querySelector(".detail-season")) : null;
                   if (seasonBtn) return (rt(seasonBtn), !0);
                   var dBtn = le ? (le.querySelector(".detail-btn.is-focused") || le.querySelector(".detail-btn")) : null;
                   return dBtn ? (rt(dBtn), !0) : !0;
@@ -5757,11 +6824,18 @@
             })(a[v], v - p.start, v);
           de.appendChild(u);
         }
-        var hasSeasonUi = !!x(t),
-          relTop = n ? 152 : hasSeasonUi ? 72 : 18,
-          relHeight = n ? 38 : hasSeasonUi ? 36 : 46,
-          relFont = n ? 32 : hasSeasonUi ? 30 : 36,
-          gridTop = relTop + (n ? 44 : hasSeasonUi ? 40 : 48);
+        /* En películas (sin episodios) se usan carátulas de 240x345 que aprovechan
+           todo el espacio vertical hasta el final; en series con episodios se adapta proporcionalmente. */
+        var pWidth = n ? 210 : 240;
+        var pHeight = n ? 295 : 345;
+        var cellH = n ? 370 : 450;
+        var compactCards = (pWidth <= 210);
+
+        var hasSeasonUi = hasMultiSeasons,
+          relTop = n ? (hasSeasonUi ? 136 : 76) : (hasSeasonUi ? 72 : 10),
+          relHeight = 36,
+          relFont = 30,
+          gridTop = relTop + 42;
         var m = e("div", "detail-related", "Quizás te guste");
         m.style.top = relTop + "px";
         m.style.fontSize = relFont + "px";
@@ -5770,14 +6844,7 @@
 
         var g = e("div", "detail-grid scrollable");
         g.style.top = gridTop + "px";
-        g.style.height = n ? "312px" : hasSeasonUi ? "336px" : "376px";
-
-        /* Con la fila de temporada la grilla empieza más abajo: las tarjetas
-           usan el tamaño compacto para que el nombre no quede cortado. */
-        var compactCards = n || hasSeasonUi;
-        var pWidth = compactCards ? 200 : 230;
-        var pHeight = compactCards ? 280 : 322;
-        var cellH = compactCards ? 326 : 374;
+        g.style.height = (cellH + 20) + "px";
 
         var relList = getRelatedItems(t, l, 10);
         for (var w = 0; w < relList.length; w++) {
@@ -5795,9 +6862,9 @@
                     oLeft = T.offsetLeft,
                     oWidth = T.offsetWidth;
                   if (oLeft < cLeft + 40) {
-                    g.scrollLeft = Math.max(0, oLeft - 40);
+                    smoothScroll(g, Math.max(0, oLeft - 40), null, 180);
                   } else if (oLeft + oWidth > cLeft + cWidth - 40) {
-                    g.scrollLeft = oLeft + oWidth - cWidth + 40;
+                    smoothScroll(g, oLeft + oWidth - cWidth + 40, null, 180);
                   }
                 }
               };
@@ -5834,8 +6901,9 @@
               T.appendChild(cardPoster);
               var dName = e("div", "d-name", relItem.title);
               dName.style.top = (pHeight + 6) + "px";
-              dName.style.height = compactCards ? "36px" : "42px";
-              dName.style.fontSize = compactCards ? "24px" : "28px";
+              dName.style.height = compactCards ? "50px" : "64px";
+              dName.style.fontSize = compactCards ? "22px" : "23px";
+              dName.style.lineHeight = compactCards ? "25px" : "29px";
               T.appendChild(dName);
               g.appendChild(T);
             })(S, w);
@@ -5856,10 +6924,127 @@
   }
   var xa = null;
   function Ta() {
-    xa && xa.parentNode && (xa.parentNode.removeChild(xa), (xa = null));
+    if (DialogManager && DialogManager.isOpen("seasonPopup")) {
+      DialogManager.close("seasonPopup");
+      return;
+    }
+    if (xa && xa.parentNode) {
+      xa.parentNode.removeChild(xa);
+    }
+    xa = null;
     var e = de ? de.querySelector(".season-arrow") : null;
     e && e.classList.remove("is-open");
   }
+  function toggleSeasonPopup(anchorBtn, item) {
+    if (DialogManager && DialogManager.isOpen("seasonPopup")) {
+      DialogManager.close("seasonPopup");
+      return;
+    }
+    if (xa) {
+      Ta();
+      return;
+    }
+    if (!item || !item.seasons || item.seasons.length < 2) return;
+
+    var arrow = anchorBtn ? anchorBtn.querySelector(".season-arrow") : null;
+    if (arrow) arrow.classList.add("is-open");
+
+    xa = e("div", "season-popup");
+    var popupHeight = Math.min(330, item.seasons.length * 54);
+    xa.style.position = "absolute";
+    xa.style.left = "80px";
+    xa.style.top = "100px";
+    xa.style.width = "280px";
+    xa.style.maxHeight = "330px";
+    xa.style.height = popupHeight + "px";
+
+    var selectedSeasonIdx = typeof X.detailSeason === "number" ? X.detailSeason : 0;
+    var initFocusElem = null;
+
+    for (var s = 0; s < item.seasons.length; s++) {
+      (function (sIndex) {
+        var sData = item.seasons[sIndex];
+        var isSelected = sIndex === selectedSeasonIdx;
+        var pItem = e(
+          "div",
+          "season-popup-item focusable" + (isSelected ? " is-selected" : "")
+        );
+        var sText = "Temporada " + (sData.number || sIndex + 1);
+        pItem.appendChild(e("span", "season-item-text", sText));
+
+        var check = e("img", "season-item-check");
+        check.src = "assets/original/vod/icon_nation_selected.png";
+        check.alt = "";
+        pItem.appendChild(check);
+
+        if (isSelected || (!initFocusElem && 0 === sIndex)) {
+          initFocusElem = pItem;
+        }
+
+        pItem._activate = function () {
+          Ta();
+          if (X.detailSeason !== sIndex) {
+            X.detailSeason = sIndex;
+            X.detailRange = 0;
+            X.detailEpisode = null;
+            jr("Cargando temporada…");
+            P("detail", { contentId: sData.id }, function (err, res) {
+              if (!err && res && !1 !== res.returnValue) {
+                res.item && H(item, res.item);
+                item.episodes = res.episodes || [];
+                item.seasonId = sData.id;
+                sData._episodes = item.episodes;
+                X.detailEpisode = item.episodes[0] || null;
+              }
+              Ca(item);
+            });
+          }
+        };
+
+        pItem._onMove = function (dir) {
+          if ("up" === dir) {
+            if (sIndex > 0 && xa.children[sIndex - 1]) {
+              rt(xa.children[sIndex - 1]);
+              return !0;
+            }
+            return !0;
+          }
+          if ("down" === dir) {
+            if (sIndex < item.seasons.length - 1 && xa.children[sIndex + 1]) {
+              rt(xa.children[sIndex + 1]);
+              return !0;
+            }
+            return !0;
+          }
+          if ("left" === dir || "right" === dir) {
+            return !0;
+          }
+          return !1;
+        };
+
+        xa.appendChild(pItem);
+      })(s);
+    }
+
+    if (de) de.appendChild(xa);
+    else document.body.appendChild(xa);
+
+    var returnTarget = anchorBtn || X.focus;
+
+    DialogManager.open("seasonPopup", xa, {
+      returnFocus: returnTarget,
+      initialFocus: initFocusElem,
+      onClose: function () {
+        if (xa && xa.parentNode) {
+          xa.parentNode.removeChild(xa);
+        }
+        xa = null;
+        var arr = de ? de.querySelector(".season-arrow") : null;
+        arr && arr.classList.remove("is-open");
+      }
+    });
+  }
+  window.toggleSeasonPopup = toggleSeasonPopup;
   function _a() {
     ((ce = t("search-keyboard")),
       (pe = t("search-hot")),
@@ -5878,6 +7063,7 @@
     me.placeholder = "Buscar películas, series, actores…";
     me.autocomplete = "off";
     me.spellcheck = !1;
+    me.readOnly = !0;
     me.value = X.searchQuery || "";
     me.oninput = function () {
       Aa(me.value);
@@ -5897,13 +7083,37 @@
     };
     me._activate = function () {
       rt(me);
-      try {
-        me.focus();
-        me.setSelectionRange &&
-          me.setSelectionRange(me.value.length, me.value.length);
-      } catch (err) {}
+      if (X.searchQuery && X.searchQuery.trim().length > 0) {
+        Pa();
+        var res = ot(he) || (t("search-suggestions") && ot(t("search-suggestions")));
+        if (res) rt(res);
+      } else {
+        var firstKey = (Be && Be[0]) || (ce && ce.querySelector(".kb-action.focusable"));
+        if (firstKey) rt(firstKey);
+      }
     };
-    bindMagicTextInput(me);
+    me.onclick = function () {
+      return (me._activate(), !0);
+    };
+    me._onMove = function (dir) {
+      if ("down" === dir) {
+        var act = ce ? (ce.querySelector(".kb-action.focusable") || (Be && Be[0])) : null;
+        if (act) {
+          rt(act);
+          return !0;
+        }
+      }
+      if ("right" === dir) {
+        var rightTarget = (pe && pe.querySelector(".search-hot-refresh")) ||
+                          (ue && ot(ue)) ||
+                          (pe && ot(pe));
+        if (rightTarget) {
+          rt(rightTarget);
+          return !0;
+        }
+      }
+      return !1;
+    };
     ce.appendChild(me);
     for (
       var i = e("div", "kb-actions"),
@@ -5918,10 +7128,23 @@
       r++
     ) {
       var o = e("div", "kb-action focusable " + n[r].cls);
+      if ("go" === n[r].cls) {
+        o.textContent = "Busca";
+      } else {
+        var ico = e("div", "ico");
+        if ("switch" === n[r].cls) {
+          ico.className = "ico ico-switch";
+          ico.textContent = "123";
+        } else if ("clear" === n[r].cls) {
+          ico.innerHTML =
+            '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M11.5 11.5l9 9M20.5 11.5l-9 9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>';
+        } else {
+          ico.innerHTML =
+            '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M12 7h10a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H12L4.5 16.7a1 1 0 0 1 0-1.4z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><path d="M15 12.5l6 7M21 12.5l-6 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
+        }
+        o.appendChild(ico);
+      }
       ((o.style.width = n[r].w + "px"),
-        "go" === n[r].cls
-          ? (o.textContent = "Busca")
-          : o.appendChild(e("div", "ico")),
         (o._kind = n[r].cls),
         (o._activate = (function (e) {
           return function () {
@@ -5997,19 +7220,25 @@
       n
     );
   }
-  function closeCatalogFilter() {
+  function closeCatalogFilter(skipFocus) {
+    if (window.DialogManager && window.DialogManager.isOpen("catalogFilter")) {
+      window.DialogManager.close("catalogFilter", !!skipFocus);
+      return;
+    }
     var e = catalogFilterDialog;
     catalogFilterDialog = null;
     if (e && e.parentNode) e.parentNode.removeChild(e);
     var ret = catalogFilterReturn;
     catalogFilterReturn = null;
-    if (ret && at(ret)) {
-      rt(ret);
-    } else if (ret) {
-      rt(ret);
-    } else if ("section" === X.screen) {
-      var scr = t("screen-section");
-      if (scr) rt(scr.querySelector(".section-sidebar-btn") || scr);
+    if (!skipFocus) {
+      if (ret && at(ret)) {
+        rt(ret);
+      } else if (ret) {
+        rt(ret);
+      } else if ("section" === X.screen) {
+        var scr = t("screen-section");
+        if (scr) rt(scr.querySelector(".section-sidebar-btn") || scr);
+      }
     }
   }
   function applyCatalogFilter(filter) {
@@ -6058,41 +7287,21 @@
             : "novels" === filter && (a = "Novelas");
     }
 
-    if ("section" === X.screen && currentSectionContext) {
-      closeCatalogFilter();
-      var filterKey = genre || a || "Filtrado";
-      var catIdx = -1;
-      for (var ci = 0; ci < currentSectionContext.categories.length; ci++) {
-        var cName = currentSectionContext.categories[ci];
-        if (o(cName) === o(filterKey) || o(cName) === o(genre || "")) {
-          catIdx = ci;
-          filterKey = cName;
-          break;
-        }
-      }
-      if (catIdx === -1) {
-        currentSectionContext.categories.unshift(filterKey);
-        currentSectionContext.categoryMap[filterKey] = t;
-      } else if (!currentSectionContext.categoryMap[filterKey] || !currentSectionContext.categoryMap[filterKey].length) {
-        currentSectionContext.categoryMap[filterKey] = t;
-      }
-      currentSectionCategory = filterKey;
-      currentSectionPage = 0;
-      renderCatalogExplorer();
-      Yt(t.length ? t.length + " títulos en " + (genre || a || "el filtro") : "No hay títulos en este filtro");
-      return;
-    }
-
-    (closeCatalogFilter(),
-      (X.searchQuery = genre ? a : "Filtro: " + (a || "Todo el catálogo")),
-      Ea(),
-      qa(t),
-      lt("search"),
-      (function () {
-        var firstResult = he ? he.querySelector(".poster.focusable") : null;
-        firstResult && rt(firstResult);
-      })(),
-      Yt(t.length ? t.length + " títulos en " + (a || "el catálogo") : "No hay títulos en este filtro"));
+    closeCatalogFilter(!0);
+    var filterTitle = genre ? ("Género: " + genre) : (a || "Catálogo");
+    var filterCatKey = genre || a || "Filtrado";
+    var catMap = {};
+    catMap[filterCatKey] = t;
+    var ctx = {
+      sectionTitle: filterTitle,
+      categories: [filterCatKey],
+      categoryMap: catMap,
+      categoryTitles: {},
+      allContextItems: t,
+      sourceTab: X.tab
+    };
+    openCatalogSection(filterTitle, t, null, ctx, filterCatKey);
+    Yt(t.length ? t.length + " títulos en " + filterTitle : "No hay títulos en este filtro");
   }
   function openCatalogFilter(returnFocus) {
     if (catalogFilterDialog) return void closeCatalogFilter();
@@ -6173,9 +7382,9 @@
         bottom = top + el.offsetHeight,
         viewTop = row.scrollTop,
         viewBottom = viewTop + row.clientHeight;
-      if (top < viewTop + 12) row.scrollTop = Math.max(0, top - 12);
+      if (top < viewTop + 12) smoothScroll(row, null, Math.max(0, top - 12), 180);
       else if (bottom > viewBottom - 12)
-        row.scrollTop = bottom - row.clientHeight + 12;
+        smoothScroll(row, null, bottom - row.clientHeight + 12, 180);
     };
     for (var t2 = 0; t2 < genreList.length; t2++)
       (function (value, idx) {
@@ -6206,9 +7415,31 @@
     if (!genreList.length)
       genreRow.appendChild(e("div", "catalog-filter-empty", "El catálogo aún no informa géneros."));
 
-    ((catalogFilterDialog = a),
-      (t("app") || document.body).appendChild(a),
-      typeBtns[0] && rt(typeBtns[0]));
+    catalogFilterDialog = a;
+    (t("app") || document.body).appendChild(a);
+    if (window.DialogManager) {
+      window.DialogManager.open("catalogFilter", a, {
+        returnFocus: catalogFilterReturn,
+        initialFocus: typeBtns[0],
+        fallbackFocus: function () {
+          if ("section" === X.screen) {
+            var scr = t("screen-section");
+            if (scr) return scr.querySelector(".section-sidebar-btn") || scr;
+          }
+          return null;
+        },
+        onClose: function () {
+          var el = catalogFilterDialog || a;
+          catalogFilterDialog = null;
+          if (el && el.parentNode) {
+            try { el.parentNode.removeChild(el); } catch (err) {}
+          }
+          catalogFilterReturn = null;
+        }
+      });
+    } else {
+      typeBtns[0] && rt(typeBtns[0]);
+    }
   }
   function La() {
     (ce || _a(), lt("search"), X.searchQuery || Ia(), rt(me));
@@ -6247,7 +7478,7 @@
       return;
     }
     sugContainer.classList.add("is-active");
-    var lbl = e("span", "search-sug-label", "💡 Sugerencias:");
+    var lbl = e("span", "search-sug-label", "Sugerencias:");
     sugContainer.appendChild(lbl);
     for (var s = 0; s < topSuggestions.length; s++) {
       (function (sugTitle) {
@@ -6472,10 +7703,8 @@
     X.searchNumeric = !X.searchNumeric;
     var t = ce.querySelector(".kb-action.switch .ico");
     t &&
-      (t.style.backgroundImage =
-        "url(assets/original/search/" +
-        (X.searchNumeric ? "ic_vod_search_abc.png" : "ic_vod_search_123.png") +
-        ")");
+      (t.className = "ico ico-switch",
+      (t.textContent = X.searchNumeric ? "ABC" : "123"));
     var a = ce.querySelectorAll(".kb-row:not(.kb-row-num)");
     if (X.searchNumeric) {
       for (var i = 0; i < a.length; i++) a[i].classList.add("hidden");
@@ -7338,6 +8567,7 @@
       ze.hasOwnProperty(c) && ze[c].classList.toggle("is-active", c === n);
     a && rt(ot(ze[n]) || je[e]);
   }
+  window.openSettingsCategory = Ua;
   function Fa(t) {
     var a = e("div", "settings-panel");
     return (a.appendChild(e("div", "sp-title", t)), a);
@@ -7370,65 +8600,80 @@
     t.appendChild(s);
   }
   function za() {
-    var t = e("div", "settings-panel account-panel"),
-      a = e("div", "account-avatar");
-    ((a.innerHTML = W.profile),
-      t.appendChild(a),
-      t.appendChild(e("div", "account-number", Q.id)),
-      t.appendChild(
-        e("div", "account-type", "Perfil local de este televisor")
-      ));
-    var i = e("div", "account-card");
-    (i.appendChild(e("div", "account-card-title", "Tu cuenta está lista")),
-      i.appendChild(
-        e(
-          "div",
-          "account-card-text",
-          "Las preferencias, el historial y el capítulo que estabas viendo se guardan automáticamente en este TV."
-        )
-      ),
-      t.appendChild(i));
+    var t = e("div", "settings-panel account-panel");
+    var header = e("div", "account-header-row");
+    var a = e("div", "account-avatar");
+    a.innerHTML = W.profile;
+    header.appendChild(a);
+    var info = e("div", "account-profile-info");
+    info.appendChild(e("div", "account-number", Q.id || "XUPER-TV-WEBOS-FLUX"));
+    var badges = e("div", "account-badges-row");
+    badges.appendChild(e("span", "account-badge badge-vip", "VIP PREMIUM"));
+    badges.appendChild(e("span", "account-badge badge-free", "100% GRATIS"));
+    badges.appendChild(e("span", "account-badge badge-device", "LG WEBOS"));
+    info.appendChild(badges);
+    header.appendChild(info);
+    t.appendChild(header);
+
+    var grid = e("div", "account-metrics-grid");
+    var m1 = e("div", "account-metric-card");
+    m1.appendChild(e("div", "am-label", "PLAN Y SUSCRIPCIÓN"));
+    m1.appendChild(e("div", "am-val", "Acceso Ilimitado"));
+    m1.appendChild(e("div", "am-sub", "Sin pagos ni suscripciones"));
+    grid.appendChild(m1);
+
+    var m2 = e("div", "account-metric-card");
+    m2.appendChild(e("div", "am-label", "MOTOR DE VIDEO"));
+    m2.appendChild(e("div", "am-val", "Modo Fluido fMP4"));
+    m2.appendChild(e("div", "am-sub", "Demuxer nativo webOS"));
+    grid.appendChild(m2);
+
+    var m3 = e("div", "account-metric-card");
+    m3.appendChild(e("div", "am-label", "SEGURIDAD Y RED"));
+    m3.appendChild(e("div", "am-val", "DoH Anycast Activo"));
+    m3.appendChild(e("div", "am-sub", "Camuflaje anti-bloqueo SNI"));
+    grid.appendChild(m3);
+    t.appendChild(grid);
+
     var n = e("div", "account-actions-row"),
-      r = e("div", "account-action-btn focusable", "📋 Ver mi lista");
-    ((r._activate = function () {
-      Ua("history", !0);
-    }),
-      (r._onMove = function (e) {
-        return "left" === e ? (rt(je[0]), !0) : "right" === e && (rt(o), !0);
-      }));
-    var o = e("div", "account-action-btn focusable", "➕ Agregar Addons");
-    ((o._activate = function () {
-      sa();
-    }),
-      (o._onMove = function (e) {
-        return "left" === e ? (rt(r), !0) : "right" === e && (rt(s), !0);
-      }));
-    var s = e("div", "account-action-btn focusable", "📲 Compartir APP");
-    ((s._activate = function () {
-      Ua("share", !0);
-    }),
-      (s._onMove = function (e) {
-        return "left" === e && (rt(o), !0);
-      }),
-      n.appendChild(r),
-      n.appendChild(o),
-      n.appendChild(s),
-      t.appendChild(n));
-    var l = e("div", "account-card account-card-small");
-    return (
-      l.appendChild(
-        e("div", "account-card-title", "Sin registro ni contraseña")
-      ),
-      l.appendChild(
-        e(
-          "div",
-          "account-card-text",
-          "Este perfil no envía tus datos a ningún servidor externo. El historial, tus favoritos y los addons instalados se guardan de forma segura en la memoria de este TV."
-        )
-      ),
-      t.appendChild(l),
-      t
+      r = e("div", "account-action-btn focusable"),
+      o = e("div", "account-action-btn focusable"),
+      s = e("div", "account-action-btn focusable");
+    r.innerHTML = W.history + "<span>Ver mi lista</span>";
+    o.innerHTML = W.addons + "<span>Administrar Addons</span>";
+    s.innerHTML = W.share + "<span>Compartir APP</span>";
+
+    r._activate = function () { Ua("history", !0); };
+    r._onMove = function (e) {
+      return "left" === e ? (rt(je[0]), !0) : "right" === e && (rt(o), !0);
+    };
+
+    o._activate = function () { sa(); };
+    o._onMove = function (e) {
+      return "left" === e ? (rt(r), !0) : "right" === e && (rt(s), !0);
+    };
+
+    s._activate = function () { Ua("share", !0); };
+    s._onMove = function (e) {
+      return "left" === e && (rt(o), !0);
+    };
+
+    n.appendChild(r);
+    n.appendChild(o);
+    n.appendChild(s);
+    t.appendChild(n);
+
+    var l = e("div", "account-card");
+    l.appendChild(e("div", "account-card-title", "Almacenamiento Local Seguro"));
+    l.appendChild(
+      e(
+        "div",
+        "account-card-text",
+        "Tus canales favoritos, el progreso de películas, capítulos vistos y configuración se guardan exclusivamente en la memoria interna de tu televisor LG webOS. Esta app es 100% privada y no transmite datos a servidores externos."
+      )
     );
+    t.appendChild(l);
+    return t;
   }
   function ja() {
     for (
@@ -7501,63 +8746,54 @@
     return (t.appendChild(d), t);
   }
   function Wa() {
-    var t = e("div", "settings-panel");
-    (t.appendChild(e("div", "sp-title", "Addons y Listas M3U")),
-      t.appendChild(i(e("div", "sp-hr soft"), 0, 165, 1498, 1)),
-      t.appendChild(
-        e(
-          "div",
-          "sp-global-note",
-          "Extiende tu catálogo con miles de canales en vivo: Anime 24/7, Telenovelas, Cine continuo, Pluto TV y señales de TV abierta de Latinoamérica y España."
-        )
-      ));
+    var t = e("div", "settings-panel addons-panel");
+    t.appendChild(e("div", "sp-title", "Addons y Listas M3U"));
+    t.appendChild(
+      e(
+        "div",
+        "sp-global-note",
+        "Extiende tu catálogo con miles de canales en vivo: Anime 24/7, Telenovelas, Cine continuo, Pluto TV y señales de TV abierta de Latinoamérica y España."
+      )
+    );
     var a = e("div", "account-card");
-    ((a.style.top = "245px"),
-      (a.style.height = "160px"),
-      a.appendChild(
-        e("div", "account-card-title", "Canales en Vivo e IPTV Personalizado")
-      ),
-      a.appendChild(
-        e(
-          "div",
-          "account-card-text",
-          "Instala listas temáticas con un solo clic o añade tus propios enlaces M3U / M3U8 para disfrutar de televisión en vivo sin límites."
-        )
-      ),
-      t.appendChild(a));
+    a.appendChild(
+      e("div", "account-card-title", "Canales en Vivo e IPTV Personalizado")
+    );
+    a.appendChild(
+      e(
+        "div",
+        "account-card-text",
+        "Instala listas temáticas con un solo clic o añade tus propios enlaces M3U / M3U8 para disfrutar de televisión en vivo sin límites."
+      )
+    );
+    t.appendChild(a);
     var n = e(
       "button",
-      "account-action-btn focusable",
-      "➕ Abrir Administrador de Addons"
+      "account-action-btn focusable"
     );
-    ((n.style.position = "absolute"),
-      (n.style.left = "0"),
-      (n.style.top = "435px"),
-      (n.style.height = "68px"),
-      (n.style.lineHeight = "68px"),
-      (n.style.padding = "0 36px"),
-      (n.style.fontSize = "25px"),
-      (n._activate = function () {
-        sa();
-      }),
-      (n._onMove = function (e) {
-        if ("left" === e) {
-          for (var t = 2, a = 0; a < j.length; a++)
-            if ("addons" === j[a].id) {
-              t = a;
-              break;
-            }
-          if (je[t]) return (rt(je[t]), !0);
-        }
-        return !1;
-      }),
-      t.appendChild(n));
+    n.innerHTML = W.addons + "<span>Abrir Administrador de Addons</span>";
+    n._activate = function () {
+      sa();
+    };
+    n._onMove = function (e) {
+      if ("left" === e) {
+        for (var t = 2, a = 0; a < j.length; a++)
+          if ("addons" === j[a].id) {
+            t = a;
+            break;
+          }
+        if (je[t]) return (rt(je[t]), !0);
+      }
+      return !1;
+    };
+    t.appendChild(n);
     var r = e(
       "div",
-      "sp-global-note",
-      '💡 Consejo: También puedes administrar tus listas directamente desde la sección En Vivo pulsando en la categoría "➕ Addons M3U".'
+      "sp-global-note addons-tip",
+      'Consejo: También puedes administrar tus listas directamente desde la sección En Vivo pulsando en la categoría "Addons M3U".'
     );
-    return ((r.style.top = "535px"), t.appendChild(r), t);
+    t.appendChild(r);
+    return t;
   }
   var Xa = { running: !1, report: null, error: null, runId: 0 },
     $a = null;
@@ -8081,6 +9317,11 @@
       }, ei)));
   }
   function pi() {
+    if (X.channelsOpen) {
+      we && (we.classList.remove("is-active"), (we.style.display = "none"));
+      return;
+    }
+    ao();
     ((X.infobar = !0),
       "vod" === X.playerMode
         ? (Me && Me.classList.add("is-active"),
@@ -8548,19 +9789,47 @@
         }),
         Dn());
       var e = X.playerItem;
+      var initFocus = null;
       if (x(e) && yi) {
         var t = yi.querySelector(".psv-ep-btn");
-        if (t) return void rt(t);
+        if (t) initFocus = t;
       }
-      x(e) && _i ? rt(_i) : bi && rt(bi);
+      if (!initFocus) {
+        initFocus = (x(e) && _i) ? _i : bi;
+      }
+      if (window.DialogManager) {
+        window.DialogManager.open("playSettingView", hi, {
+          returnFocus: Ce,
+          initialFocus: initFocus,
+          fallbackFocus: function () {
+            if ("player" === X.screen && Ce && at(Ce)) return Ce;
+            return null;
+          },
+          onClose: function () {
+            if (Wi) { clearTimeout(Wi); Wi = null; }
+            zi = !1;
+            if (hi) {
+              hi.classList.remove("is-active");
+              hi.style.display = "";
+            }
+            if (Bi) Bi.classList.remove("shift-up");
+          }
+        });
+      } else {
+        initFocus && rt(initFocus);
+      }
     }
   }
-  function On() {
+  function On(skipFocus) {
+    if (window.DialogManager && window.DialogManager.isOpen("playSettingView")) {
+      window.DialogManager.close("playSettingView", !!skipFocus);
+      return;
+    }
     (Wi && (clearTimeout(Wi), (Wi = null)),
       (zi = !1),
-      hi && hi.classList.remove("is-active"),
+      hi && (hi.classList.remove("is-active"), (hi.style.display = "")),
       Bi && Bi.classList.remove("shift-up"),
-      "player" !== X.screen || ji || rt(Ce));
+      !skipFocus && ("player" !== X.screen || ji || rt(Ce)));
   }
   function qn() {
     var e = X.focus ? n(X.focus, ".psv-row") : null,
@@ -8638,14 +9907,9 @@
               p++
             )
               (function (t, a) {
-                var i =
-                    a === o
-                      ? "▶"
-                      : String(
-                          void 0 !== t.number && null !== t.number
-                            ? t.number
-                            : a + 1
-                        ),
+                var i = String(
+                  void 0 !== t.number && null !== t.number ? t.number : a + 1
+                ),
                   n = e(
                     "button",
                     "psv-ep-btn focusable" + (a === o ? " is-selected" : ""),
@@ -8840,7 +10104,7 @@
                   (a._onFocus = function () {
                     if (Ii) {
                       var targetScroll = a.offsetLeft - (Ii.clientWidth / 2) + (a.clientWidth / 2);
-                      Ii.scrollLeft = Math.max(0, targetScroll);
+                      smoothScroll(Ii, Math.max(0, targetScroll), null, 180);
                     }
                     X.browserSeason !== t && Wn(t, !1);
                   }),
@@ -8879,15 +10143,34 @@
         (Ai ? Ai.querySelector(".pe-ep.is-current") : null) ||
         (Ai ? ot(Ai) : null) ||
         (Ei && "none" !== Ei.style.display ? ot(Ii) : null);
-      i && rt(i);
+      if (window.DialogManager) {
+        window.DialogManager.open("playerEpisodes", ki, {
+          returnFocus: Ce,
+          initialFocus: i,
+          fallbackFocus: function () {
+            if ("player" === X.screen && Ce && at(Ce)) return Ce;
+            return null;
+          },
+          onClose: function () {
+            X.episodeBrowserOpen = !1;
+            if (ki) ki.classList.remove("is-active");
+          }
+        });
+      } else {
+        i && rt(i);
+      }
     }
   }
-  function zn(e) {
+  function zn(skipFocus) {
+    if (window.DialogManager && window.DialogManager.isOpen("playerEpisodes")) {
+      window.DialogManager.close("playerEpisodes", !!skipFocus);
+      return;
+    }
     ki &&
       X.episodeBrowserOpen &&
       ((X.episodeBrowserOpen = !1),
       ki.classList.remove("is-active"),
-      !e && "player" === X.screen && Ce && rt(Ce));
+      !skipFocus && "player" === X.screen && Ce && rt(Ce));
   }
   function changeEpisodePage(e, t) {
     var a = X.playerItem;
@@ -8939,7 +10222,8 @@
             r = void 0 !== a.number && null !== a.number ? a.number : i + 1;
           n.appendChild(e("div", "pe-num", String(r)));
           var o = e("div", "pe-thumb"),
-            s = e("div", "pe-thumb-play", "▶");
+            s = e("div", "pe-thumb-play");
+          s.innerHTML = playSvg();
           (o.appendChild(s), n.appendChild(o));
           var l = e("div", "pe-info");
           l.appendChild(e("div", "pe-name", Un(t, a, i)));
@@ -8955,7 +10239,7 @@
             (X.playerEpisode.id === a.id ||
               (void 0 !== X.playerEpisode.number &&
                 X.playerEpisode.number === a.number));
-          (n.appendChild(e("div", "pe-badge", "▶ REPRODUCIENDO")),
+          (n.appendChild(e("div", "pe-badge", "REPRODUCIENDO")),
             p && n.classList.add("is-current"),
             (n._onMove = function (e) {
               var t = Ai ? Ai.querySelectorAll(".pe-ep") : [],
@@ -9192,14 +10476,43 @@
           ji && (ar(), ir());
         }));
       var a = (Pi && Pi.querySelector(".focusable")) || Oi || Fi;
-      a && rt(a);
+      if (zi && hi) {
+        hi.style.display = "none";
+      }
+      if (window.DialogManager) {
+        window.DialogManager.open("playSettings", mi, {
+          returnFocus: fn,
+          initialFocus: a,
+          fallbackFocus: function () {
+            if (zi && bi && at(bi)) return bi;
+            if ("player" === X.screen && Ce && at(Ce)) return Ce;
+            return null;
+          },
+          onClose: function () {
+            ji = !1;
+            if (mi) mi.classList.remove("is-active");
+            if (zi) {
+              if (hi) hi.style.display = "";
+              if (bi) rt(bi);
+              Dn();
+            }
+            fn = null;
+          }
+        });
+      } else {
+        a && rt(a);
+      }
     }
   }
   function tr() {
+    if (window.DialogManager && window.DialogManager.isOpen("playSettings")) {
+      window.DialogManager.close("playSettings");
+      return;
+    }
     ((ji = !1),
       mi && mi.classList.remove("is-active"),
       zi
-        ? (bi && rt(bi), Dn())
+        ? (hi && (hi.style.display = ""), bi && rt(bi), Dn())
         : fn && at(fn)
           ? rt(fn)
           : "player" === X.screen && rt(Ce),
@@ -9419,7 +10732,8 @@
     panelUhd = null,
     panelUhdAsked = !1,
     copyTryKey = "",
-    copyTryCount = 0;
+    copyTryCount = 0,
+    Tr = null;
   function panelInfo() {
     try {
       return (
@@ -9429,6 +10743,52 @@
     } catch (e) {
       return {};
     }
+  }
+  function xWebosVersion() {
+    if (null !== Tr) return Tr;
+    var e = "";
+    try {
+      window.webOS &&
+        window.webOS.systemInfo &&
+        window.webOS.systemInfo.version &&
+        (e = String(window.webOS.systemInfo.version));
+    } catch (t) {
+      e = "";
+    }
+    if (!e && window.PalmSystem && window.PalmSystem.deviceInfo)
+      try {
+        var t = window.PalmSystem.deviceInfo;
+        ("string" == typeof t && (t = JSON.parse(t)),
+          t &&
+            (t.platformVersion
+              ? (e = String(t.platformVersion))
+              : t.version
+                ? (e = String(t.version))
+                : void 0 !== t.platformVersionMajor &&
+                    null !== t.platformVersionMajor
+                  ? (e =
+                      String(t.platformVersionMajor) +
+                      "." +
+                      String(t.platformVersionMinor || 0))
+                  : t.sdkVersion && (e = String(t.sdkVersion))));
+      } catch (t) {
+        e = "";
+      }
+    if (!e && navigator && navigator.userAgent) {
+      var a = /(?:webOS|Web0S)[ \/]([0-9]+(?:\.[0-9]+)?)/i.exec(
+        navigator.userAgent
+      );
+      a && a[1] && (e = a[1]);
+    }
+    if (!e && navigator && navigator.userAgent) {
+      /Chrome\/38\./i.test(navigator.userAgent)
+        ? (e = "3.0")
+        : /Chrome\/53\./i.test(navigator.userAgent)
+          ? (e = "3.5")
+          : /Chrome\/68\./i.test(navigator.userAgent) && (e = "4.0");
+    }
+    var i = parseFloat(e);
+    return (Tr = isNaN(i) ? 0 : i);
   }
   function xHevcCapable() {
     if ("boolean" == typeof panelHevc) return panelHevc;
@@ -9782,9 +11142,9 @@
       catBadge = e("span", "pc-cat-badge", Mt ? Mt.name : "Todos"),
       toolbar = e("div", "pc-toolbar"),
       channelSearch = e("button", "pc-toolbar-btn pc-btn-search focusable"),
-      channelFilter = e("button", "pc-toolbar-btn pc-btn-filter focusable"),
       channelFavorites = e("button", "pc-toolbar-btn pc-btn-fav focusable"),
-      channelAll = e("button", "pc-toolbar-btn pc-btn-all focusable");
+      channelAll = e("button", "pc-toolbar-btn pc-btn-all focusable"),
+      channelCategory = e("button", "pc-toolbar-btn pc-btn-filter focusable");
 
     titleRow.appendChild(titleText);
     titleRow.appendChild(catBadge);
@@ -9795,8 +11155,10 @@
       channelFavorites.setAttribute("aria-label", "Canales favoritos"),
       (channelFavorites.innerHTML = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3l4 8 9 1-6.5 6 1.7 9L16 22.5 7.8 27l1.7-9L3 12l9-1z" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/></svg><span>Favoritos</span>'),
       channelFavorites.classList.toggle("is-active", liveFavoritesOnly),
-      channelFilter.setAttribute("aria-label", "Filtrar categorías"),
-      (channelFilter.innerHTML = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 8h22M5 16h22M5 24h22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="11" cy="8" r="3" fill="currentColor"/><circle cx="22" cy="16" r="3" fill="currentColor"/><circle cx="15" cy="24" r="3" fill="currentColor"/></svg><span>Filtrar</span>'),
+      channelAll.setAttribute("aria-label", "Todos los canales"),
+      (channelAll.innerHTML = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 16h18M16 7v18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" stroke-width="2"/></svg><span>Todos</span>'),
+      channelCategory.setAttribute("aria-label", "Categorías de canales"),
+      (channelCategory.innerHTML = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 8h22M5 16h22M5 24h22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="11" cy="8" r="3" fill="currentColor"/><circle cx="22" cy="16" r="3" fill="currentColor"/><circle cx="15" cy="24" r="3" fill="currentColor"/></svg><span>Categorías</span>'),
       (channelSearch._activate = function () {
         openLiveChannelSearch(channelSearch);
       }),
@@ -9804,44 +11166,42 @@
         liveFavoritesOnly = !liveFavoritesOnly;
         syncLiveFavoriteButtons();
         hr(X.channel);
-        Yt(liveFavoritesOnly ? "★ Mostrando canales favoritos" : "Mostrando todos los canales");
+        Yt(liveFavoritesOnly ? "Mostrando canales favoritos" : "Mostrando todos los canales");
         rt(channelFavorites);
       }),
-      (channelFilter._activate = function () {
-        pr(channelFilter);
-      }),
-      channelAll.setAttribute("aria-label", "Todos los canales"),
-      (channelAll.innerHTML = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 16h18M16 7v18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" stroke-width="2"/></svg><span>Todos</span>'),
       (channelAll._activate = function () {
         selectAllLiveChannels(channelAll);
       }),
+      (channelCategory._activate = function () {
+        pr(channelCategory);
+      }),
       (channelSearch._onMove = function (e) {
-        if ("right" === e) return rt(channelFilter), !0;
+        if ("right" === e) return rt(channelFavorites), !0;
         if ("down" === e) return (F.length && fr(X.channel), !0);
         return !1;
       }),
       (channelFavorites._onMove = function (e) {
-        if ("left" === e) return rt(channelFilter), !0;
-        if ("right" === e) return rt(channelAll), !0;
-        if ("down" === e) return (F.length && fr(X.channel), !0);
-        return !1;
-      }),
-      (channelFilter._onMove = function (e) {
         if ("left" === e) return rt(channelSearch), !0;
-        if ("right" === e) return rt(channelFavorites), !0;
+        if ("right" === e) return rt(channelAll), !0;
         if ("down" === e) return (F.length && fr(X.channel), !0);
         return !1;
       }),
       (channelAll._onMove = function (e) {
         if ("left" === e) return rt(channelFavorites), !0;
+        if ("right" === e) return rt(channelCategory), !0;
+        if ("down" === e) return (F.length && fr(X.channel), !0);
+        return !1;
+      }),
+      (channelCategory._onMove = function (e) {
+        if ("left" === e) return rt(channelAll), !0;
         if ("right" === e || "up" === e) return !0;
         if ("down" === e) return (F.length && fr(X.channel), !0);
         return !1;
       }),
       toolbar.appendChild(channelSearch),
-      toolbar.appendChild(channelFilter),
       toolbar.appendChild(channelFavorites),
       toolbar.appendChild(channelAll),
+      toolbar.appendChild(channelCategory),
       y.appendChild(toolbar),
       Se.appendChild(y));
     var b = e("div", "pc-categories scrollable");
@@ -9852,13 +11212,14 @@
     (Se.appendChild(C), dr(), hr());
     var w = e("div", "pc-menu");
     (w.appendChild(e("div", "ic")),
-      w.appendChild(e("div", "l1", "[OK] Reproducir · [→] Favorito")),
-      w.appendChild(e("div", "l2", "[↑] Buscar · ← Menú")),
+      w.appendChild(e("div", "l1", "[OK] Reproducir  •  [AMARILLO / →] Favorito")),
+      w.appendChild(e("div", "l2", "[SALIR] Pantalla completa  •  ← Menú")),
       Se.appendChild(w));
   }
   function closeLiveChannelSearch(returnFocus) {
     var e = Se && Se.querySelector(".pc-search-box");
     ((liveSearchOpen = !1),
+      Se && Se.classList && Se.classList.remove("pc-searching"),
       liveSearchInput && liveSearchInput.blur && liveSearchInput.blur(),
       (liveSearchInput = null),
       e && e.parentNode && e.parentNode.removeChild(e),
@@ -9909,6 +11270,7 @@
       box.appendChild(label),
       box.appendChild(clear),
       Se.appendChild(box),
+      Se.classList.add("pc-searching"),
       (liveSearchInput = input),
       hr(X.channel),
       rt(input),
@@ -9932,7 +11294,7 @@
                   { id: 76188, name: "Colombia" },
                   { id: 76191, name: "España" },
                   { id: 76197, name: "México" },
-                  { id: "addons", name: "➕ Addons M3U", isAddon: !0 },
+                  { id: "addons", name: "Addons M3U", isAddon: !0 },
                 ];
         X.adultEnabled ||
           (i = i.filter(function (e) {
@@ -10028,85 +11390,172 @@
   var categoryPickerReturnFocus = null;
   function pr(returnFocus) {
     categoryPickerReturnFocus = returnFocus || X.focus;
-    if (
-      ($e ||
-        (($e = t("player-categories")),
-        (Ge = t("pcat-grid")),
-        (Qe = t("pcat-sub"))),
-      $e && Ge)
-    ) {
-      ((X.categoryPickerOpen = !0),
-        $e.classList.add("is-active"),
-        ui(),
-        (function () {
-          if (!Ge) return;
-          var t = Lt && Lt.length ? Lt : DEFAULT_LIVE_CATEGORIES.slice();
-          X.adultEnabled ||
-            (t = t.filter(function (e) {
-              return !!(e && (e.isAddon || !isAdultLiveChannel(e)));
-            }));
-          (a(Ge),
-            Qe &&
-              (Qe.textContent = t.length
-                ? t.length + " categorías · selecciona para ver canales"
-                : "Cargando categorías…"));
-          for (var i = 0; i < t.length; i++)
-            (function (t) {
-              var a = e("div", "pcat-tile focusable");
-              (a.appendChild(e("div", "pcat-name", t.name)),
-                Mt && Mt.id === t.id && a.classList.add("is-selected"),
-                (a._cat = t),
-                (a._activate = function () {
-                  /* La lista de la categoría se carga de forma asíncrona. Antes
-                     se hacía hr(0) contra la lista vieja y el foco terminaba en
-                     el reproductor: pulsar OK no cambiaba de canal y la TV se
-                     quedaba en el canal anterior. Ahora se espera la carga,
-                     se recoloca X.channel y el foco entra en la primera fila. */
-                  var prevKey = F[X.channel] ? liveChannelKey(F[X.channel]) : "";
-                  (ur(!0), Yt("Categoría: " + t.name));
-                  Xt(t, function () {
-                    var j = 0,
-                      k;
-                    if (prevKey) {
-                      for (k = 0; k < F.length; k++)
-                        if (liveChannelKey(F[k]) === prevKey) {
-                          j = k;
-                          break;
-                        }
-                    }
-                    X.channel = Math.max(0, Math.min(F.length - 1, j));
-                    if ("player" === X.screen) fr(X.channel);
-                    else if ("home" === X.screen) Qt(liveFavoritesOnly);
-                  });
-                }),
-                Ge.appendChild(a));
-            })(t[i]);
-        })());
-      var i = Ge.querySelector(".pcat-tile.is-selected") || ot(Ge);
-      i && rt(i);
+    if (!$e) {
+      $e = t("player-categories");
+      Ge = t("pcat-grid");
+      Qe = t("pcat-sub");
+    }
+    if ($e && Ge) {
+      var scrP = t("screen-player");
+      scrP && scrP.classList.add("categories-open");
+      Se && Se.classList.remove("is-active");
+      we && (we.classList.remove("is-active"), (we.style.display = "none"));
+      X.categoryPickerOpen = !0;
+      $e.classList.add("is-active");
+      ui();
+      var pClose = t("pcat-close");
+      if (pClose) {
+        pClose._activate = function () { ur(); };
+        pClose._onMove = function (dir) {
+          if ("down" === dir) {
+            var firstTile = Ge ? Ge.querySelector(".pcat-tile.focusable") : null;
+            return firstTile ? (rt(firstTile), !0) : !0;
+          }
+          return !1;
+        };
+      }
+      (function () {
+        if (!Ge) return;
+        var cats = Lt && Lt.length ? Lt : DEFAULT_LIVE_CATEGORIES.slice();
+        X.adultEnabled ||
+          (cats = cats.filter(function (el) {
+            return !!(el && (el.isAddon || !isAdultLiveChannel(el)));
+          }));
+        a(Ge);
+        if (Qe) {
+          Qe.textContent = cats.length
+            ? cats.length + " categorías · selecciona para ver canales"
+            : "Cargando categorías…";
+        }
+        var catTiles = [];
+        for (var i = 0; i < cats.length; i++) {
+          (function (catObj, idx) {
+            var tile = e("div", "pcat-tile focusable");
+            tile.appendChild(e("div", "pcat-name", catObj.name));
+            if (Mt && Mt.id === catObj.id) tile.classList.add("is-selected");
+            tile._cat = catObj;
+            tile._activate = function () {
+              var chosenCategory = catObj;
+              ur(!0);
+              Yt("Categoría: " + chosenCategory.name);
+              if ("player" === X.screen && Ce) rt(Ce);
+              Xt(chosenCategory, function () {
+                X.channel = 0;
+                if ("player" === X.screen) {
+                  if (F && F.length && F[0]) {
+                    to(F[0], !0);
+                  }
+                  no();
+                } else if ("home" === X.screen) {
+                  Qt(liveFavoritesOnly);
+                  if (Fe[0] && at(Fe[0])) {
+                    rt(Fe[0]);
+                    Wt(F[0]);
+                  } else {
+                    var homeFastCat = document.querySelector(".live-fast .f-cat");
+                    if (homeFastCat && at(homeFastCat)) rt(homeFastCat);
+                  }
+                }
+              });
+            };
+            tile._onMove = function (dir) {
+              var cols = 4;
+              if ("left" === dir && idx % cols > 0) {
+                if (catTiles[idx - 1]) return rt(catTiles[idx - 1]), !0;
+              }
+              if ("right" === dir && idx % cols < cols - 1) {
+                if (catTiles[idx + 1]) return rt(catTiles[idx + 1]), !0;
+              }
+              if ("up" === dir) {
+                if (idx - cols >= 0 && catTiles[idx - cols]) return rt(catTiles[idx - cols]), !0;
+                var pCloseBtn = t("pcat-close");
+                if (pCloseBtn && at(pCloseBtn)) return rt(pCloseBtn), !0;
+                return !0;
+              }
+              if ("down" === dir) {
+                if (idx + cols < catTiles.length && catTiles[idx + cols]) return rt(catTiles[idx + cols]), !0;
+                return !0;
+              }
+              return !1;
+            };
+            Ge.appendChild(tile);
+            catTiles.push(tile);
+          })(cats[i], i);
+        }
+      })();
+      var selTile = Ge.querySelector(".pcat-tile.is-selected") || ot(Ge);
+      if (window.DialogManager) {
+        window.DialogManager.open("playerCategories", $e, {
+          returnFocus: categoryPickerReturnFocus,
+          initialFocus: selTile,
+          fallbackFocus: function () {
+            if ("home" === X.screen) {
+              var homeCat = document.querySelector(".live-fast .f-cat") || document.querySelector(".live-fast .f-all");
+              if (homeCat && at(homeCat)) return homeCat;
+              if (Fe && Fe[0] && at(Fe[0])) return Fe[0];
+              if (Ue && Ue[0] && at(Ue[0])) return Ue[0];
+            } else if ("player" === X.screen) {
+              var pFilter = Se ? (Se.querySelector(".pc-btn-filter") || Se.querySelector(".pc-filter")) : null;
+              if (pFilter && at(pFilter)) return pFilter;
+              if (Xe && Xe[X.channel] && at(Xe[X.channel])) return Xe[X.channel];
+              if (Ce && at(Ce)) return Ce;
+            }
+            return null;
+          },
+          onClose: function () {
+            var scrP2 = t("screen-player");
+            scrP2 && scrP2.classList.remove("categories-open");
+            if ($e) $e.classList.remove("is-active");
+            X.categoryPickerOpen = !1;
+            if ("player" === X.screen) {
+              if (Se) {
+                Se.classList.add("is-active");
+                X.channelsOpen = !0;
+              }
+            }
+          }
+        });
+      } else {
+        selTile && rt(selTile);
+      }
     }
   }
-  function ur(e) {
-    if (
-      $e &&
-      X.categoryPickerOpen &&
-      ((X.categoryPickerOpen = !1), $e.classList.remove("is-active"), !e)
-    ) {
+  function ur(skipFocus) {
+    if (window.DialogManager && window.DialogManager.isOpen("playerCategories")) {
+      window.DialogManager.close("playerCategories", !!skipFocus);
+      if (!skipFocus) return;
+    }
+    var scrP = t("screen-player");
+    scrP && scrP.classList.remove("categories-open");
+    if (!$e) $e = t("player-categories");
+    if ($e) $e.classList.remove("is-active");
+    X.categoryPickerOpen = !1;
+    if ("player" === X.screen) {
+      if (Se) {
+        Se.classList.add("is-active");
+        X.channelsOpen = !0;
+      }
+    }
+    if (!skipFocus) {
       if (categoryPickerReturnFocus && at(categoryPickerReturnFocus)) {
         rt(categoryPickerReturnFocus);
-      } else {
-        var t = Se ? Se.querySelector(".pc-btn-filter") : null;
-        if (t && at(t)) {
-          rt(t);
-        } else if ("player" === X.screen && Ce) {
+      } else if ("home" === X.screen) {
+        var homeCat = document.querySelector(".live-fast .f-cat") || document.querySelector(".live-fast .f-all");
+        if (homeCat && at(homeCat)) {
+          rt(homeCat);
+        } else if (Fe[0] && at(Fe[0])) {
+          rt(Fe[0]);
+        } else if (Ue[0]) {
+          rt(Ue[0]);
+        }
+      } else if ("player" === X.screen) {
+        var pFilter = Se ? (Se.querySelector(".pc-btn-filter") || Se.querySelector(".pc-filter")) : null;
+        if (pFilter && at(pFilter)) {
+          rt(pFilter);
+        } else if (Xe && Xe[X.channel] && at(Xe[X.channel])) {
+          rt(Xe[X.channel]);
+        } else if (Ce && at(Ce)) {
           rt(Ce);
-        } else if ("home" === X.screen) {
-          var homeFast = document.querySelector(".live-fast .f-all");
-          if (homeFast && at(homeFast)) {
-            rt(homeFast);
-          } else if (Fe[0] && at(Fe[0])) {
-            rt(Fe[0]);
-          }
         }
       }
     }
@@ -10117,9 +11566,8 @@
         i = t.offsetWidth,
         n = e.scrollLeft,
         r = e.clientWidth;
-      a < n
-        ? (e.scrollLeft = a - 20)
-        : a + i > n + r && (e.scrollLeft = a + i - r + 20);
+      if (a < n) smoothScroll(e, Math.max(0, a - 20), null, 180);
+      else if (a + i > n + r) smoothScroll(e, a + i - r + 20, null, 180);
     }
   }
   function fr(e) {
@@ -10134,6 +11582,10 @@
     }
   }
   function closeLiveFavoriteConfirm(returnFocus) {
+    if (window.DialogManager && window.DialogManager.isOpen("liveFavoriteConfirm")) {
+      window.DialogManager.close("liveFavoriteConfirm");
+      return;
+    }
     var e = liveFavoritePrompt;
     ((liveFavoritePrompt = null),
       e && e.parentNode && e.parentNode.removeChild(e),
@@ -10154,10 +11606,12 @@
       if (i) {
         if ((a(i), (Xe = {}), Mt && Mt.isAddon)) {
           var n = e("div", "pc-row-addon-promo focusable");
-          n.appendChild(e("div", "promo-icon", "⚙️"));
+          var promoIcon = e("div", "promo-icon");
+          promoIcon.innerHTML = gearSvg();
+          n.appendChild(promoIcon);
           var o = e("div", "promo-info");
           (o.appendChild(
-            e("div", "promo-text", "➕ Administrar Addons y Listas M3U")
+            e("div", "promo-text", "Administrar Addons y Listas M3U")
           ),
             o.appendChild(
               e(
@@ -10230,11 +11684,11 @@
               "pc-channel-fav focusable" +
                 (X.liveFavorites[liveChannelKey(F[channelIndex])] || F[channelIndex].fav
                   ? " is-favorite"
-                  : ""),
-              X.liveFavorites[liveChannelKey(F[channelIndex])] || F[channelIndex].fav
-                ? "★"
-                : "☆"
+                  : "")
             );
+          m.innerHTML = starSvg(
+            !!(X.liveFavorites[liveChannelKey(F[channelIndex])] || F[channelIndex].fav)
+          );
           (p.appendChild(u),
             p.appendChild(v),
             p.appendChild(f),
@@ -10338,56 +11792,9 @@
        poder rearmarse en el siguiente título (antes quedaba desactivado para
        toda la sesión y el segundo intento se quedaba en "Conectando"). */
     xrKey = "",
-    smoothFallbackKey = "",
-    Tr = null;
+    smoothFallbackKey = "";
   function _r() {
-    var e = (function () {
-      if (null !== Tr) return Tr;
-      var e = "";
-      try {
-        window.webOS &&
-          window.webOS.systemInfo &&
-          window.webOS.systemInfo.version &&
-          (e = String(window.webOS.systemInfo.version));
-      } catch (t) {
-        e = "";
-      }
-      if (!e && window.PalmSystem && window.PalmSystem.deviceInfo)
-        try {
-          var t = window.PalmSystem.deviceInfo;
-          ("string" == typeof t && (t = JSON.parse(t)),
-            t &&
-              (t.platformVersion
-                ? (e = String(t.platformVersion))
-                : t.version
-                  ? (e = String(t.version))
-                  : void 0 !== t.platformVersionMajor &&
-                      null !== t.platformVersionMajor
-                    ? (e =
-                        String(t.platformVersionMajor) +
-                        "." +
-                        String(t.platformVersionMinor || 0))
-                    : t.sdkVersion && (e = String(t.sdkVersion))));
-        } catch (t) {
-          e = "";
-        }
-      if (!e && navigator && navigator.userAgent) {
-        var a = /(?:webOS|Web0S)[ \/]([0-9]+(?:\.[0-9]+)?)/i.exec(
-          navigator.userAgent
-        );
-        a && a[1] && (e = a[1]);
-      }
-      !e &&
-        navigator &&
-        navigator.userAgent &&
-        (/Chrome\/38\./i.test(navigator.userAgent)
-          ? (e = "3.0")
-          : /Chrome\/53\./i.test(navigator.userAgent)
-            ? (e = "3.5")
-            : /Chrome\/68\./i.test(navigator.userAgent) && (e = "4.0"));
-      var i = parseFloat(e);
-      return (Tr = isNaN(i) ? 0 : i);
-    })();
+    xWebosVersion();
     /* Modo Fluido usa siempre fMP4 (igual que XuperMH): el pipeline nativo de
        webOS 1/2/3 no demuxa de forma fiable el MPEG-TS crudo y dejaba la
        pantalla en negro. El Modo Normal no pasa por aquí. */
@@ -11136,7 +12543,18 @@
       }
       i.trackIndex = X.trackIndex || 0;
       var panelUhd = xUhdPanel();
-      ((i.quality = X.playback.quality || "auto"),
+      var curQuality = (X.playback && X.playback.quality) || "auto";
+      var ver = xWebosVersion();
+      var legacyModel = /^\d{2}(UB|UF|UG)/i.test(String(panelInfo().modelName || ""));
+      /* En televisores webOS 1.x y 2.x (2014-2015, ej. LG UF7700 / UB8500), el SoC
+         temprano (MStar LM15U) solo decodifica HEVC 8-bit y no soporta flujos 4K pesados ni
+         HEVC 10-bit sin descartar cuadros (tirones). En calidad "auto", se limita a 1080p
+         para que la reproducción sea completamente fluida. Si el usuario fuerza 4K
+         manualmente en el reproductor (curQuality === "2160"), se respeta. */
+      if (((ver > 0 && ver < 3) || legacyModel) && "auto" === curQuality) {
+        panelUhd = !1;
+      }
+      ((i.quality = curQuality),
         (i.hevc = xHevcCapable()),
         (i.uhd = panelUhd));
       var r = X.playerEpisode,
@@ -11160,7 +12578,7 @@
             (i.seriesContentId = c));
         }
       }
-      var done = function (i, n) {
+      var done = function (resErr, n) {
         if (a !== yr) return;
         /* Tiempo que tardó el servicio en resolver la señal (diagnóstico). */
         try {
@@ -11170,7 +12588,7 @@
         /* Como XuperMH: si Modo Fluido no se puede resolver, reintenta una vez
            por el camino Normal en lugar de dejar al espectador sin vídeo. */
         if (
-          (i || !n || !1 === n.returnValue) &&
+          (resErr || !n || !1 === n.returnValue) &&
           i.forceRelay &&
           !i._retryNormal
         ) {
@@ -11180,10 +12598,10 @@
           jr("Modo Fluido no respondió, usando Modo Normal…");
           return void P("resolve", i, done);
         }
-        if (i || !n || !1 === n.returnValue)
+        if (resErr || !n || !1 === n.returnValue)
           return (
             (X.streamError =
-              "No se pudo resolver el título" + (i ? ": " + i : "")),
+              "No se pudo resolver el título" + (resErr ? ": " + resErr : "")),
             jr(X.streamError),
             t("")
           );
@@ -11286,6 +12704,9 @@
   }
   function Kr(e, a) {
     Ce || lr();
+    if (X.channelsOpen || (Se && Se.classList.contains("is-active"))) {
+      ro();
+    }
     var i =
         !a ||
         !X.playerEpisode ||
@@ -11312,6 +12733,11 @@
         : (showLoadingBackdrop(X.playerItem, "Cargando " + ((X.playerItem && X.playerItem.title) || "") + "…"), Jr(X.playerItem, X.playerEpisode)));
   }
   function Yr(e, t, a) {
+    var sp = document.getElementById("screen-player");
+    sp && sp.classList.remove("is-mini");
+    if (zi) On();
+    var viBar = document.getElementById("player-vod-infobar");
+    viBar && viBar.classList.remove("is-active");
     "vod" !== e || "detail" !== X.screen
       ? (Ce || lr(),
         "live" === e && jt(),
@@ -11575,33 +13001,9 @@
       p = we.querySelector(".pi-logo");
     if (e)
       (Me && Me.classList.remove("is-active"),
-        we && (we.style.display = ""),
         (a.style.display = "block"),
         (a.textContent = r(t.index || X.channel + 1)),
         (i.textContent = t.name || ""),
-        (function () {
-          var e = we.querySelector(".pi-namerow");
-          if (!e) return;
-          we.querySelector(".pi-index");
-          var t = e.querySelector(".pi-name"),
-            a = e.querySelector(".pi-uhd"),
-            i = 165;
-          ((e.style.position = "absolute"),
-            (e.style.left = 367.5 + i + "px"),
-            (e.style.top = "13.5px"),
-            (e.style.width = "480px"),
-            (e.style.height = "58px"),
-            (e.style.display = "block"),
-            (t.style.position = "absolute"),
-            (t.style.left = "0px"),
-            (t.style.top = "8px"),
-            (t.style.width = "480px"),
-            (t.style.height = "50px"),
-            (t.style.lineHeight = "50px"),
-            a &&
-              ((a.style.left = t.offsetWidth + 30 + "px"),
-              (a.style.top = "18.5px")));
-        })(),
         (n.textContent = "Hoy"),
         (o.textContent = t.time || ""),
         (s.style.display = "block"),
@@ -11635,6 +13037,11 @@
       Xe.hasOwnProperty(m) &&
         Xe[m].classList.toggle("is-current", Xe[m]._channel === X.channel);
     io();
+    if (X.channelsOpen) {
+      we && (we.classList.remove("is-active"), (we.style.display = "none"));
+    } else if (e) {
+      we && (we.style.display = "");
+    }
   }
   function io() {
     var e = we.querySelector(".pi-quality"),
@@ -11649,6 +13056,7 @@
   }
   function no() {
     if ("live" === X.playerMode) {
+      we && we.classList.remove("is-active");
       ((X.channelsOpen = !0),
         Se.classList.add("is-active"),
         dr(),
@@ -11660,7 +13068,7 @@
         var t = e.parentNode,
           a = 111 * X.channel;
         (a < t.scrollTop || a + 109.5 > t.scrollTop + t.clientHeight) &&
-          (t.scrollTop = Math.max(0, a - 120));
+          smoothScroll(t, null, Math.max(0, a - 120), 180);
       }
     }
   }
@@ -11671,7 +13079,7 @@
     liveSearchText = "";
     ((X.channelsOpen = !1),
       Se && Se.classList.remove("is-active"),
-      "player" === X.screen && rt(Ce));
+      "player" === X.screen && (ao(), pi(), rt(Ce)));
   }
   function oo() {
     var e = t("app");
@@ -11757,13 +13165,15 @@
       var lastHoverAt = 0;
       document.addEventListener("mouseover", function (e) {
         /* El control Magic puede emitir decenas de "mouseover" por segundo.
-           En TVs lentas eso repintaba el foco sin parar; se limita a ~12 fps. */
+           En TVs lentas eso repintaba el foco sin parar; se limita a ~12 fps.
+           Ademas ignoramos hover si acabamos de pulsar Back para evitar recaptura inmediata. */
         var now = Date.now();
+        if (now - lastBackKeyDown < 500) return;
         if (now - lastHoverAt < 80) return;
         lastHoverAt = now;
-        var t = n(e.target, ".focusable");
-        if (t && at(t) && X.focus !== t) {
-          rt(t, !0);
+        var tElem = n(e.target, ".focusable");
+        if (tElem && at(tElem) && X.focus !== tElem) {
+          rt(tElem, !0);
         }
       }, !1);
       document.addEventListener("click", function (e) {
@@ -11792,7 +13202,7 @@
             closeLiveFavoriteConfirm();
             return;
           }
-        } else if (xa) {
+        } else if (xa || (DialogManager && DialogManager.isOpen("seasonPopup"))) {
           if (!n(e.target, ".season-popup")) {
             Ta();
             return;
@@ -11822,13 +13232,13 @@
         if (!delta) return;
         var scrollY = findScrollable(e.target, !1);
         if (scrollY) {
-          scrollY.scrollTop += (delta > 0 ? 120 : -120);
+          smoothScroll(scrollY, null, scrollY.scrollTop + (delta > 0 ? 140 : -140), 160);
           e.preventDefault && e.preventDefault();
           return;
         }
         var scrollX = findScrollable(e.target, !0);
         if (scrollX) {
-          scrollX.scrollLeft += (delta > 0 ? 200 : -200);
+          smoothScroll(scrollX, scrollX.scrollLeft + (delta > 0 ? 240 : -240), null, 160);
           e.preventDefault && e.preventDefault();
           return;
         }
@@ -11999,11 +13409,95 @@
   function lo() {
     (zr(), Da());
   }
+  /* webOS puede conservar el audio del canal y perder el plano de imagen al
+     minimizar la app (botón Inicio) o al volver de otra entrada. Repintar la
+     capa del <video> obliga a Starfish a recrear la superficie sin tocar la
+     URL, el modo de reproducción, currentTime ni hacer seek. */
+  var videoResume = null,
+    videoResumeTimer = null,
+    videoResumeRetries = [];
+  function markVideoState() {
+    videoResume = {
+      live: !!(xe && xe.src && !xe.paused),
+      vod: !!(xe && xe.src && !xe.paused),
+      preview: !!(Ot && Ot.src && !Ot.paused),
+    };
+  }
+  function kickVideoSurface(v) {
+    if (!v || !v.src) return;
+    try {
+      var prevDisplay = v.style.display,
+        prevVisibility = v.style.visibility,
+        prevOpacity = v.style.opacity,
+        prevTransform = v.style.transform,
+        prevWebkitTransform = v.style.webkitTransform;
+      /* En webOS 4+ la capa de hardware del <video> se pierde al minimizar.
+         Alternar display + forzar reflow + tocar opacidad/transform obliga al
+         compositor de Starfish a recrear la superficie del vídeo. */
+      v.style.display = "none";
+      void v.offsetHeight;
+      v.style.display = prevDisplay || "";
+      v.style.visibility = "hidden";
+      void v.offsetHeight;
+      v.style.visibility = prevVisibility || "";
+      v.style.opacity = "0.99";
+      void v.offsetHeight;
+      v.style.opacity = prevOpacity || "1";
+      v.style.webkitTransform = prevWebkitTransform || "";
+      v.style.transform = prevTransform || "";
+      void v.offsetHeight;
+      if (prevTransform) v.style.transform = prevTransform;
+      if (prevWebkitTransform) v.style.webkitTransform = prevWebkitTransform;
+    } catch (e) {}
+    try {
+      if (v.paused && !liveUserPaused) {
+        var p = v.play();
+        p && p.catch && p.catch(function () {});
+      }
+    } catch (e) {}
+  }
+  function restoreVideoSurfaces() {
+    if (document.hidden) return;
+    var st = videoResume || {};
+    if (xe && xe.src && ("live" !== X.playerMode || st.live || st.vod)) {
+      kickVideoSurface(xe);
+    }
+    if (Ot && Ot.src && (st.preview || !Ot.paused)) kickVideoSurface(Ot);
+  }
+  function scheduleVideoSurfaceRestore() {
+    if (videoResumeTimer) clearTimeout(videoResumeTimer);
+    for (var r = 0; r < videoResumeRetries.length; r++)
+      clearTimeout(videoResumeRetries[r]);
+    videoResumeRetries = [];
+    /* Varios intentos: al volver de Home la TV tarda en recomponer la
+       superficie; un único repintado a 320 ms puede llegar demasiado pronto. */
+    videoResumeTimer = setTimeout(restoreVideoSurfaces, 150);
+    var delays = [600, 1400, 2600];
+    for (var d = 0; d < delays.length; d++)
+      videoResumeRetries.push(setTimeout(restoreVideoSurfaces, delays[d]));
+  }
+  function onAppHiddenChanged() {
+    if (document.hidden) {
+      markVideoState();
+      /* Al minimizar la app NO se desmonta el reproductor: en webOS el audio
+         del canal sigue vivo y, al volver, solo hay que repintar la superficie
+         de vídeo. Solo se cierran los paneles para que no reaparezcan abiertos. */
+      try { Da(); } catch (e) {}
+    } else {
+      scheduleVideoSurfaceRestore();
+    }
+  }
   (window.addEventListener("beforeunload", lo),
     window.addEventListener("unload", lo),
-    document.addEventListener("visibilitychange", function () {
-      document.hidden && lo();
+    window.addEventListener("pagehide", function () {
+      try { Da(); } catch (e) {}
     }),
+    document.addEventListener("visibilitychange", onAppHiddenChanged),
+    document.addEventListener("webkitvisibilitychange", onAppHiddenChanged),
+    document.addEventListener("webOSLaunch", scheduleVideoSurfaceRestore),
+    document.addEventListener("webOSRelaunch", scheduleVideoSurfaceRestore),
+    window.addEventListener("focus", scheduleVideoSurfaceRestore),
+    window.addEventListener("pageshow", scheduleVideoSurfaceRestore),
     (window.onerror = function (e, t, a, i, n) {
       try {
         (console.error(

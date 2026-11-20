@@ -1,9 +1,10 @@
 {
-    "version": "3.1.13",
-    "name": "XuperTV",
-    "minWebos": "1.0.0",
-    "ipkUrl": "https://github.com/cristianco7/XUPER-HYDRA-PORT-WEBOS/releases/download/v3.1.13/com.webosflux.xuptertv.fidelity_3.1.13_all.ipk",
-    "sha256": "841EE0E17B5F305E0D94048BAF185D12CE8CE2DAE82247F4D85107826D1F9DEC",
-    "changelog": "Versión 3.1.13: (1) Canales de deportes curados: lista depurada exclusivamente con señales de DirecTV (DSports 1, 2, +, ON DIRECTV HD) y ESPN (ESPN 1 al 7, ESPN Premium y ESPN México 1 al 5), eliminando canales con errores de portal como Bein Sports. (2) Explorador de catálogo completo estilo APK de referencia: botón 'Ver más' habilitado en todos los rieles de Películas, Series, Infantil, Anime y Novelas; apertura de pantalla completa con barra lateral izquierda (Buscar, Filtrar, divisor y categorías oficiales del feed en su orden original), cabecera superior con migas de pan y contador de páginas, cuadrícula de 5 columnas x 2 filas (10 títulos por página con badge azul de nota, badge ámbar CC y títulos grandes y legibles en negrita), botones de paginación ampliados y navegación completa con el control remoto. (3) Navegación de regreso perfeccionada: cierre de modales de filtro sin salir al inicio (protección anti-rebote en tecla Atrás) y retorno directo al Explorador desde el buscador.",
-    "releaseDate": "2026-11-15"
+  "version": "3.1.69",
+  "name": "XuperTV",
+  "minWebos": "1.0.0",
+  "ipkUrl": "https://github.com/cristianco7/XUPER-HYDRA-PORT-WEBOS/releases/download/v3.1.69/com.webosflux.xuptertv.fidelity_3.1.69_all.ipk",
+  "sha256": "379bb1f492756154f61b0c511e096bcbdc01f8e4587e77997a56e651f786a76a",
+  "changelog": "v3.1.69: Optimización de memoria en carga de pósters, navegación de navbar con activación manual por OK o Flecha Abajo para evitar saturación de texturas GPU, corrección de límite de calidad automática en webOS 2.x/modelos legacy (techo en 1080p para prevenir tirones en SoC MStar LM15U), blindaje del fallback en Modo Fluido y actualización de logotipos de autoría.",
+  "releaseDate": "2026-11-20",
+  "releasedAt": "2026-11-20T03:10:00Z"
 }
