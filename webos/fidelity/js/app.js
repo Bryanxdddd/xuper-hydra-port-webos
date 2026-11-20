@@ -1,6 +1,6 @@
 !(function () {
   "use strict";
-  var APP_VERSION = "3.1.69";
+  var APP_VERSION = "3.1.70";
   window.APP_VERSION = APP_VERSION;
   /* Iconos vectoriales inline: las fuentes de las TV webOS no incluyen
      glifos ★ ☆ ▶ ⚙ ➕ ni emoji, por eso se dibujan en SVG. */
@@ -13108,7 +13108,7 @@
         i = a.w,
         n = a.h,
         r = Math.min(i / 1920, n / 1080),
-        displayScale = 1;
+        displayScale = (Q && Q.uiScaleMode === "hd" && i > 1280) ? (2 / 3) : 1;
       r *= displayScale;
       ((!isFinite(r) || r <= 0) && (r = 1), (r = Math.round(1e4 * r) / 1e4));
       var o = Math.max(0, Math.round((i - 1920 * r) / 2)),
