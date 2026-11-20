@@ -1,1309 +1,246 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XuperTV Ultra - webOS Smart TV</title>
-    <!-- Tailwind CSS CDN (Estilos UI) -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome para iconos de UI y Control Remoto -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        /* Estilos base para motor WebKit de Smart TVs LG webOS */
-        * {
-            box-sizing: border-box;
-            user-select: none;
-            -webkit-user-select: none;
-            -webkit-touch-callout: none;
-            outline: none !important;
-        }
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #05070a;
-            color: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            overflow: hidden;
-        }
-
-        /* Escenario Master 1920x1080 fijado con transform: scale */
-        #stage-scaler {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: #000000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-        }
-        #app-stage {
-            position: absolute;
-            width: 1920px;
-            height: 1080px;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%) scale(1);
-            transform-origin: center center;
-            background: radial-gradient(circle at 50% 20%, #151c28 0%, #080c14 60%, #030508 100%);
-            overflow: hidden;
-            box-sizing: border-box;
-        }
-
-        /* Indicador visual de Foco (Control Remoto D-Pad) */
-        .focusable {
-            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease;
-            border: 2px solid transparent;
-        }
-        .focusable.focused {
-            transform: scale(1.05);
-            border-color: #3b82f6 !important;
-            box-shadow: 0 0 25px rgba(59, 130, 246, 0.6), inset 0 0 10px rgba(59, 130, 246, 0.3);
-            z-index: 40;
-        }
-        .focusable-list-item.focused {
-            transform: translateX(8px);
-            background-color: rgba(59, 130, 246, 0.25) !important;
-            border-left: 6px solid #3b82f6 !important;
-        }
-
-        /* Riel horizontal con desplazamiento suave */
-        .catalog-rail {
-            display: flex;
-            overflow-x: hidden;
-            scroll-behavior: smooth;
-            padding: 10px 0;
-        }
-
-        /* Degradados Glassmorphism */
-        .glass-panel {
-            background: rgba(18, 25, 40, 0.75);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        .glass-header {
-            background: linear-gradient(180deg, rgba(8, 12, 20, 0.95) 0%, rgba(8, 12, 20, 0.4) 70%, rgba(8, 12, 20, 0) 100%);
-        }
-
-        /* Animación Toast */
-        @keyframes toastFadeInOut {
-            0% { opacity: 0; transform: translateY(30px); }
-            15% { opacity: 1; transform: translateY(0); }
-            85% { opacity: 1; transform: translateY(0); }
-            100% { opacity: 0; transform: translateY(-20px); }
-        }
-        .toast-animate {
-            animation: toastFadeInOut 4.5s ease forward;
-        }
-
-        /* Ocultar barra de scroll nativa */
-        ::-webkit-scrollbar {
-            display: none;
-        }
-    </style>
+<meta charset="UTF-8">
+<title>XuperTV Ultra</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; background: #070b14; color: #f8fafc; font-family: Arial, Helvetica, sans-serif; overflow: hidden; }
+#stage { position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; background: #070b14; -webkit-transform-origin: 0 0; transform-origin: 0 0; overflow: hidden; }
+#sidebar { position: absolute; top: 0; left: 0; width: 280px; height: 1080px; background: #0c1322; border-right: 2px solid #1e293b; padding: 40px 24px; }
+.brand { font-size: 36px; font-weight: bold; color: #ffffff; letter-spacing: 1px; margin-bottom: 10px; }
+.brand span { color: #e50914; }
+.badge { display: inline-block; background: #1e293b; color: #38bdf8; font-size: 16px; padding: 6px 12px; border-radius: 6px; margin-bottom: 42px; }
+.nav-item { display: block; width: 100%; text-align: left; background: transparent; border: 2px solid transparent; color: #94a3b8; font-size: 24px; font-weight: bold; padding: 18px 20px; border-radius: 12px; margin-bottom: 14px; }
+.nav-item.active { background: #162036; color: #ffffff; border-left: 6px solid #e50914; }
+.nav-item.focus { background: #e50914; color: #ffffff; border-color: #ffffff; }
+#main { position: absolute; top: 0; left: 280px; width: 1640px; height: 1080px; padding: 36px 48px; overflow: hidden; }
+#topbar { height: 64px; margin-bottom: 24px; }
+#searchBox { float: left; width: 520px; height: 56px; background: #111827; border: 2px solid #334155; border-radius: 10px; color: #ffffff; font-size: 22px; padding: 0 18px; }
+#searchBox.focus { border-color: #38bdf8; background: #1e293b; }
+#srvStatus { float: right; background: #111827; border: 2px solid #1e293b; border-radius: 10px; padding: 14px 22px; font-size: 20px; color: #38bdf8; }
+#hero { position: relative; width: 1544px; height: 340px; background: #111827; border: 2px solid #1e293b; border-radius: 18px; padding: 38px 44px; margin-bottom: 34px; }
+#heroTag { display: inline-block; background: #e50914; color: #ffffff; font-size: 16px; font-weight: bold; padding: 6px 14px; border-radius: 6px; margin-bottom: 14px; }
+#heroTitle { font-size: 46px; font-weight: bold; color: #ffffff; margin-bottom: 12px; }
+#heroDesc { font-size: 22px; color: #cbd5e1; width: 920px; line-height: 1.4; margin-bottom: 24px; }
+.btn { display: inline-block; padding: 14px 30px; font-size: 22px; font-weight: bold; border-radius: 10px; border: 3px solid transparent; margin-right: 16px; }
+.btn-play { background: #e50914; color: #ffffff; }
+.btn-sec { background: #1e293b; color: #f8fafc; }
+.btn.focus { border-color: #38bdf8; -webkit-transform: scale(1.05); transform: scale(1.05); }
+.sec-title { font-size: 26px; font-weight: bold; color: #f1f5f9; margin-bottom: 16px; }
+#cardsRow { width: 1560px; height: 430px; overflow: hidden; }
+.card { float: left; width: 286px; height: 200px; background: #111827; border: 3px solid #1e293b; border-radius: 14px; padding: 20px; margin-right: 22px; margin-bottom: 22px; position: relative; }
+.card.focus { border-color: #e50914; background: #1b263b; -webkit-transform: scale(1.04); transform: scale(1.04); }
+.card-cat { font-size: 15px; color: #38bdf8; text-transform: uppercase; margin-bottom: 8px; }
+.card-name { font-size: 23px; font-weight: bold; color: #ffffff; line-height: 1.25; }
+.card-meta { position: absolute; bottom: 16px; left: 20px; font-size: 16px; color: #94a3b8; }
+#playerOverlay { display: none; position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; background: #000000; z-index: 99; }
+#videoEl { width: 1920px; height: 1080px; background: #000000; }
+#playerHud { position: absolute; bottom: 40px; left: 60px; right: 60px; background: rgba(12,19,34,0.9); border: 2px solid #334155; border-radius: 14px; padding: 22px 30px; font-size: 24px; }
+</style>
 </head>
 <body>
-
-    <!-- Escenario Principal con Auto-Escalado Universal -->
-    <div id="stage-scaler">
-        <div id="app-stage">
-
-            <!-- Capa de Reproductor de Video Fullscreen -->
-            <div id="player-container" class="absolute inset-0 z-0 bg-black hidden">
-                <video id="main-video" class="w-full h-full object-contain"></video>
-                
-                <!-- Overlay de OSD / Controles -->
-                <div id="player-osd" class="absolute inset-0 z-10 flex flex-col justify-between p-12 transition-opacity duration-300 glass-header">
-                    <!-- Top Bar Player -->
-                    <div class="flex justify-between items-center">
-                        <div class="flex items-center space-x-4">
-                            <button id="btn-player-back" onclick="XuperApp.closePlayer()" class="focusable w-12 h-12 rounded-full glass-panel flex items-center justify-center text-white text-xl">
-                                <i class="fa-solid fa-arrow-left"></i>
-                            </button>
-                            <div>
-                                <h2 id="player-title" class="text-2xl font-bold text-white tracking-wide">Cargando contenido...</h2>
-                                <p id="player-subtitle" class="text-sm text-blue-400 font-medium"></p>
-                            </div>
-                        </div>
-                        <div class="flex items-center space-x-3">
-                            <span id="badge-player-mode" class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-600/40 text-blue-300 border border-blue-500/30">Modo Normal</span>
-                            <span id="badge-live-tag" class="px-3 py-1 rounded-full text-xs font-semibold bg-red-600 text-white hidden">EN VIVO</span>
-                        </div>
-                    </div>
-
-                    <!-- Bottom Bar Controls -->
-                    <div class="space-y-4">
-                        <!-- Progress Bar (Solo VOD) -->
-                        <div id="player-progress-box" class="space-y-1">
-                            <div class="relative w-full h-2 bg-gray-700/60 rounded-full overflow-hidden">
-                                <div id="player-progress-bar" class="absolute left-0 top-0 h-full bg-blue-500 w-0"></div>
-                            </div>
-                            <div class="flex justify-between text-xs text-gray-300 font-mono">
-                                <span id="player-time-current">00:00</span>
-                                <span id="player-time-total">00:00</span>
-                            </div>
-                        </div>
-
-                        <!-- Buttons Row -->
-                        <div class="flex items-center justify-center space-x-6">
-                            <button id="btn-player-rw" onclick="XuperApp.seekVideo(-10)" class="focusable w-14 h-14 rounded-full glass-panel flex items-center justify-center text-white text-xl">
-                                <i class="fa-solid fa-backward-step"></i>
-                            </button>
-                            <button id="btn-player-toggle" onclick="XuperApp.togglePlayPause()" class="focusable w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white text-2xl shadow-lg">
-                                <i id="icon-player-toggle" class="fa-solid fa-pause"></i>
-                            </button>
-                            <button id="btn-player-ff" onclick="XuperApp.seekVideo(10)" class="focusable w-14 h-14 rounded-full glass-panel flex items-center justify-center text-white text-xl">
-                                <i class="fa-solid fa-forward-step"></i>
-                            </button>
-                            <button id="btn-player-audio" onclick="XuperApp.cycleAudioTrack()" class="focusable px-4 py-3 rounded-xl glass-panel text-xs font-bold text-gray-300 flex items-center space-x-2">
-                                <i class="fa-solid fa-volume-high"></i> <span id="lbl-player-audio">Audio</span>
-                            </button>
-                            <button id="btn-player-subs" onclick="XuperApp.cycleSubtitles()" class="focusable px-4 py-3 rounded-xl glass-panel text-xs font-bold text-gray-300 flex items-center space-x-2">
-                                <i class="fa-solid fa-closed-captioning"></i> <span id="lbl-player-subs">Subtítulos</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Capa de Interfaz Principal (Navegación + Vistas) -->
-            <div id="ui-layer" class="relative z-10 w-full h-full flex flex-col p-10">
-                
-                <!-- Header / Barra de Navegación Flotante -->
-                <header class="flex justify-between items-center mb-6">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white font-black text-xl shadow-lg">X</div>
-                        <span class="text-2xl font-black tracking-wider text-white">XUPER<span class="text-blue-500">TV</span> <span class="text-xs px-2 py-0.5 rounded bg-blue-900/60 text-blue-300 font-mono">ULTRA</span></span>
-                    </div>
-
-                    <!-- Menú de Pestañas -->
-                    <nav id="top-nav" class="flex items-center space-x-2 glass-panel p-1.5 rounded-2xl">
-                        <button data-screen="home" onclick="XuperApp.showScreen('home')" class="focusable nav-btn px-6 py-2.5 rounded-xl text-sm font-semibold text-gray-300 transition">Inicio</button>
-                        <button data-screen="live" onclick="XuperApp.showScreen('live')" class="focusable nav-btn px-6 py-2.5 rounded-xl text-sm font-semibold text-gray-300 transition">TV en Vivo</button>
-                        <button data-screen="movies" onclick="XuperApp.showScreen('category', 'movies')" class="focusable nav-btn px-6 py-2.5 rounded-xl text-sm font-semibold text-gray-300 transition">Películas</button>
-                        <button data-screen="series" onclick="XuperApp.showScreen('category', 'series')" class="focusable nav-btn px-6 py-2.5 rounded-xl text-sm font-semibold text-gray-300 transition">Series</button>
-                        <button data-screen="anime" onclick="XuperApp.showScreen('category', 'anime')" class="focusable nav-btn px-6 py-2.5 rounded-xl text-sm font-semibold text-gray-300 transition">Anime</button>
-                        <button data-screen="search" onclick="XuperApp.showScreen('search')" class="focusable nav-btn px-6 py-2.5 rounded-xl text-sm font-semibold text-gray-300 transition"><i class="fa-solid fa-magnifying-glass"></i></button>
-                        <button data-screen="settings" onclick="XuperApp.showScreen('settings')" class="focusable nav-btn px-6 py-2.5 rounded-xl text-sm font-semibold text-gray-300 transition"><i class="fa-solid fa-gear"></i></button>
-                    </nav>
-                </header>
-
-                <!-- VISTA 1: INICIO (HOME) -->
-                <main id="screen-home" class="view-screen flex-1 overflow-y-auto space-y-8 pr-2">
-                    <!-- Hero Banner Destacado -->
-                    <section id="hero-banner" class="relative h-96 rounded-3xl overflow-hidden glass-panel flex items-end p-10 bg-cover bg-center">
-                        <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/60 to-transparent"></div>
-                        <div class="relative z-10 space-y-4 max-w-2xl">
-                            <span class="px-3 py-1 rounded-lg text-xs font-bold tracking-widest uppercase bg-blue-600 text-white">RECOMENDADO</span>
-                            <h1 id="hero-title" class="text-4xl font-extrabold text-white leading-tight">Cargando destacados...</h1>
-                            <p id="hero-desc" class="text-sm text-gray-300 line-clamp-2">Obteniendo catálogo desde el servicio local...</p>
-                            <div class="flex items-center space-x-4 pt-2">
-                                <button id="btn-hero-play" onclick="XuperApp.playHero()" class="focusable px-8 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 font-bold text-white text-sm flex items-center space-x-2 shadow-lg">
-                                    <i class="fa-solid fa-play"></i> <span>Reproducir</span>
-                                </button>
-                                <button id="btn-hero-detail" onclick="XuperApp.openHeroDetail()" class="focusable px-6 py-3 rounded-xl glass-panel font-semibold text-gray-200 text-sm flex items-center space-x-2">
-                                    <i class="fa-solid fa-circle-info"></i> <span>Detalles</span>
-                                </button>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- Rieles Horizontal estilo Netflix -->
-                    <section class="space-y-6">
-                        <div>
-                            <h3 class="text-xl font-bold text-white mb-3">Tendencias de la Semana</h3>
-                            <div id="rail-trending" class="catalog-rail space-x-4"></div>
-                        </div>
-                        <div>
-                            <h3 class="text-xl font-bold text-white mb-3">Películas Populares</h3>
-                            <div id="rail-movies" class="catalog-rail space-x-4"></div>
-                        </div>
-                        <div>
-                            <h3 class="text-xl font-bold text-white mb-3">Series Recomendadas</h3>
-                            <div id="rail-series" class="catalog-rail space-x-4"></div>
-                        </div>
-                    </section>
-                </main>
-
-                <!-- VISTA 2: TV EN VIVO (EPG 3 COLUMNAS) -->
-                <main id="screen-live" class="view-screen flex-1 grid grid-cols-12 gap-6 hidden">
-                    <!-- Columna 1: Categorías -->
-                    <div class="col-span-3 glass-panel rounded-2xl p-4 flex flex-col">
-                        <h3 class="text-lg font-bold text-white mb-4 px-2 flex items-center justify-between">
-                            <span>Categorías</span>
-                            <i class="fa-solid fa-list-ul text-xs text-gray-400"></i>
-                        </h3>
-                        <div id="live-categories" class="flex-1 overflow-y-auto space-y-1"></div>
-                    </div>
-
-                    <!-- Columna 2: Canales con Favoritos -->
-                    <div class="col-span-5 glass-panel rounded-2xl p-4 flex flex-col">
-                        <div class="flex justify-between items-center mb-3 px-2">
-                            <h3 id="lbl-live-cat-title" class="text-lg font-bold text-white">Todos los Canales</h3>
-                            <button id="btn-live-toggle-favs" onclick="XuperApp.toggleLiveFavFilter()" class="focusable px-3 py-1 rounded-lg glass-panel text-xs text-yellow-400 font-medium">
-                                <i class="fa-solid fa-star"></i> Solo Favoritos
-                            </button>
-                        </div>
-                        <div id="live-channels" class="flex-1 overflow-y-auto space-y-1 pr-1"></div>
-                        <div class="pt-3 border-t border-gray-800 text-xs text-gray-400 text-center">
-                            Presiona el botón <span class="text-yellow-400 font-bold">[AMARILLO]</span> en el control para marcar favorito.
-                        </div>
-                    </div>
-
-                    <!-- Columna 3: Mini Reproductor / Información -->
-                    <div class="col-span-4 glass-panel rounded-2xl p-6 flex flex-col justify-between">
-                        <div class="space-y-4">
-                            <div class="h-48 rounded-xl bg-gray-900 overflow-hidden relative flex items-center justify-center border border-gray-800">
-                                <img id="live-preview-logo" src="" class="h-24 object-contain opacity-80" alt="Channel Logo" onerror="this.style.display='none'">
-                                <div class="absolute bottom-3 left-3 right-3 bg-gray-950/80 p-2 rounded-lg text-xs font-semibold text-center text-gray-300">
-                                    Vista Previa de Canal
-                                </div>
-                            </div>
-                            <div>
-                                <h4 id="live-channel-name" class="text-xl font-bold text-white">Selecciona un canal</h4>
-                                <p id="live-channel-num" class="text-sm text-blue-400 font-mono">CH --</p>
-                            </div>
-                            <p id="live-channel-desc" class="text-xs text-gray-400 leading-relaxed">Presiona OK para reproducir en pantalla completa.</p>
-                        </div>
-                        <button id="btn-live-play" onclick="XuperApp.playCurrentLiveChannel()" class="focusable w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 font-bold text-white text-sm">
-                            Sintonizar en Vivo
-                        </button>
-                    </div>
-                </main>
-
-                <!-- VISTA 3: CATEGORÍAS EN GRID (Películas/Series/Anime) -->
-                <main id="screen-category" class="view-screen flex-1 flex flex-col space-y-4 hidden">
-                    <div class="flex justify-between items-center">
-                        <h2 id="cat-screen-title" class="text-2xl font-bold text-white">Explorar Catálogo</h2>
-                        <span id="cat-screen-count" class="text-sm text-gray-400 font-mono">0 Títulos</span>
-                    </div>
-                    <div id="category-grid" class="flex-1 overflow-y-auto grid grid-cols-6 gap-4 pr-2"></div>
-                </main>
-
-                <!-- VISTA 4: BÚSQUEDA -->
-                <main id="screen-search" class="view-screen flex-1 flex flex-col space-y-6 hidden">
-                    <div class="glass-panel p-4 rounded-2xl flex items-center space-x-4">
-                        <i class="fa-solid fa-magnifying-glass text-xl text-gray-400 ml-2"></i>
-                        <input id="search-input" type="text" placeholder="Escribe el nombre de la película, serie o canal..." class="bg-transparent flex-1 text-white text-lg font-medium outline-none">
-                        <button id="btn-search-exec" onclick="XuperApp.executeSearch()" class="focusable px-6 py-2.5 rounded-xl bg-blue-600 font-bold text-sm text-white">Buscar</button>
-                    </div>
-                    <div id="search-results-grid" class="flex-1 overflow-y-auto grid grid-cols-6 gap-4 pr-2"></div>
-                </main>
-
-                <!-- VISTA 5: DETALLE DE VOD (Película / Serie) -->
-                <main id="screen-detail" class="view-screen flex-1 glass-panel rounded-3xl p-8 relative overflow-hidden flex flex-col justify-between hidden">
-                    <div id="detail-backdrop" class="absolute inset-0 opacity-20 bg-cover bg-center"></div>
-                    <div class="relative z-10 flex space-x-8">
-                        <img id="detail-poster" src="" class="w-64 h-96 object-cover rounded-2xl shadow-2xl border border-gray-700" alt="Poster" onerror="this.src='https://placehold.co/300x450/111827/ffffff?text=XuperTV'">
-                        <div class="flex-1 space-y-4">
-                            <h2 id="detail-title" class="text-4xl font-extrabold text-white">Título del Contenido</h2>
-                            <div class="flex items-center space-x-4 text-sm text-gray-300">
-                                <span id="detail-year" class="px-2.5 py-0.5 rounded bg-gray-800 font-mono">2026</span>
-                                <span id="detail-genre" class="text-blue-400">Acción, Drama</span>
-                                <span id="detail-duration" class="text-gray-400">120 min</span>
-                            </div>
-                            <p id="detail-overview" class="text-sm text-gray-300 max-w-3xl leading-relaxed line-clamp-4">Sinopsis no disponible.</p>
-
-                            <!-- Selector de Modo Fluido -->
-                            <div class="pt-4 flex items-center space-x-4">
-                                <button id="btn-toggle-smooth" onclick="XuperApp.toggleSmoothMode()" class="focusable px-5 py-2.5 rounded-xl glass-panel text-xs font-bold text-blue-300 flex items-center space-x-2">
-                                    <i id="icon-smooth-check" class="fa-solid fa-toggle-on text-blue-500 text-lg"></i>
-                                    <span>Modo Fluido (fMP4 Local Relay)</span>
-                                </button>
-                                <span class="text-xs text-gray-400">Recuperación automática en 15s si falla el inicio.</span>
-                            </div>
-
-                            <!-- Botón Reproducir / Selector Episodios -->
-                            <div class="pt-2">
-                                <button id="btn-detail-play-main" onclick="XuperApp.playVodCurrent()" class="focusable px-8 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 font-bold text-white text-base flex items-center space-x-3 shadow-xl">
-                                    <i class="fa-solid fa-play"></i> <span>Reproducir Ahora</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Lista de Episodios (Solo Series) -->
-                    <div id="detail-episodes-section" class="relative z-10 border-t border-gray-800 pt-4 hidden">
-                        <h4 class="text-lg font-bold text-white mb-3">Episodios y Temporadas</h4>
-                        <div id="detail-episodes-list" class="catalog-rail space-x-3"></div>
-                    </div>
-                </main>
-
-                <!-- VISTA 6: AJUSTES Y AUTO-TEST DIAGNÓSTICO -->
-                <main id="screen-settings" class="view-screen flex-1 grid grid-cols-12 gap-6 hidden">
-                    <!-- Columna Izquierda: Opciones -->
-                    <div class="col-span-5 glass-panel rounded-2xl p-6 space-y-6">
-                        <h2 class="text-xl font-bold text-white">Configuración del Sistema</h2>
-                        
-                        <div class="space-y-4">
-                            <div>
-                                <label class="text-xs font-semibold text-gray-400 block mb-1">Margen de Pantalla (Overscan Safe-Zone)</label>
-                                <div class="flex space-x-2">
-                                    <button onclick="XuperApp.setOverscan(0)" class="focusable flex-1 py-2 rounded-lg glass-panel text-xs font-bold text-gray-300">0% (Lleno)</button>
-                                    <button onclick="XuperApp.setOverscan(2.5)" class="focusable flex-1 py-2 rounded-lg glass-panel text-xs font-bold text-gray-300">2.5% (Medio)</button>
-                                    <button onclick="XuperApp.setOverscan(5)" class="focusable flex-1 py-2 rounded-lg glass-panel text-xs font-bold text-gray-300">5% (Seguro)</button>
-                                </div>
-                            </div>
-
-                            <div class="pt-4 border-t border-gray-800">
-                                <h4 class="text-sm font-bold text-white mb-2">Estado del Servicio</h4>
-                                <div class="text-xs space-y-2 text-gray-300 font-mono">
-                                    <div class="flex justify-between"><span>Capa de Conexión:</span> <span id="diag-layer-status" class="text-blue-400">Detectando...</span></div>
-                                    <div class="flex justify-between"><span>Servicio Node:</span> <span id="diag-node-status" class="text-yellow-400">Comprobando...</span></div>
-                                    <div class="flex justify-between"><span>Resolución Pantalla:</span> <span id="diag-res-status">1920x1080</span></div>
-                                    <div class="flex justify-between"><span>Motor JS:</span> <span class="text-green-400">ES5 Strict Certified</span></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Columna Derecha: Panel de Diagnóstico & Auto-Test -->
-                    <div class="col-span-7 glass-panel rounded-2xl p-6 flex flex-col justify-between space-y-4">
-                        <div>
-                            <div class="flex justify-between items-center mb-4">
-                                <h2 class="text-xl font-bold text-white">Auto-Test & Diagnóstico Técnico</h2>
-                                <span id="test-badge-result" class="px-3 py-1 rounded-full text-xs font-bold bg-gray-800 text-gray-400">Sin Ejecutar</span>
-                            </div>
-
-                            <p class="text-xs text-gray-300 mb-4">
-                                Haz clic en el botón inferior para ejecutar la suite completa de pruebas unitarias y de integración sobre la compatibilidad ES5, el motor de navegación D-Pad, las 4 capas del ServiceBridge y las reglas del reproductor.
-                            </p>
-
-                            <!-- Log de Pruebas -->
-                            <div id="test-log-output" class="h-72 bg-gray-950 p-4 rounded-xl text-xs font-mono overflow-y-auto space-y-1 text-gray-300 border border-gray-800">
-                                <div>Esperando inicio del Diagnóstico...</div>
-                            </div>
-                        </div>
-
-                        <button id="btn-run-selftest" onclick="window.__xuper.runSelfTest()" class="focusable w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 font-bold text-white text-sm flex items-center justify-center space-x-2">
-                            <i class="fa-solid fa-microchip"></i> <span>Ejecutar Diagnóstico Completo (0 Errores)</span>
-                        </button>
-                    </div>
-                </main>
-
-            </div>
-
-            <!-- Toast Notification Container -->
-            <div id="toast-container" class="absolute bottom-8 right-8 z-50 flex flex-col space-y-2 pointer-events-none"></div>
-
-        </div>
+<div id="stage">
+  <div id="sidebar">
+    <div class="brand">XUPER<span>TV</span></div>
+    <div class="badge">ULTRA WEBOS</div>
+    <button class="nav-item active focus" data-tab="home">Inicio y Tendencias</button>
+    <button class="nav-item" data-tab="movies">Películas</button>
+    <button class="nav-item" data-tab="series">Series</button>
+    <button class="nav-item" data-tab="live">TV en Vivo</button>
+    <button class="nav-item" data-tab="diag">Diagnóstico Servicio</button>
+  </div>
+  <div id="main">
+    <div id="topbar">
+      <input id="searchBox" type="text" placeholder="Buscar película, serie o canal...">
+      <div id="srvStatus">Conectando servicio Luna...</div>
     </div>
+    <div id="hero">
+      <div id="heroTag">DESTACADO</div>
+      <div id="heroTitle">XuperTV Ultra Listo</div>
+      <div id="heroDesc">Usa las flechas del control remoto para navegar y presiona OK para reproducir. Pulsa Diagnóstico Servicio si el catálogo aparece vacío.</div>
+      <button id="btnHeroPlay" class="btn btn-play">Reproducir Ahora</button>
+      <button id="btnHeroReload" class="btn btn-sec">Recargar Catálogo</button>
+    </div>
+    <div id="sectionHeader" class="sec-title">Catálogo Disponible (0 Títulos)</div>
+    <div id="cardsRow"></div>
+  </div>
+  <div id="playerOverlay">
+    <video id="videoEl" autoplay playsinline></video>
+    <div id="playerHud">Reproduciendo... Presiona ATRÁS (BACK) para volver al catálogo.</div>
+  </div>
+</div>
+<script>
+(function() {
+  var SERVICE_URI = "luna://com.webosflux.xuptertv.fidelity.service";
+  var items = [];
+  var currentTab = "home";
+  var focusIndex = 0;
 
-    <!-- CÓDIGO JS EN ES5 PURO ESTRICTO -->
-    <script>
-    'use strict';
+  function scaleStage() {
+    var s = document.getElementById("stage");
+    var sx = window.innerWidth / 1920;
+    var sy = window.innerHeight / 1080;
+    var scale = sx < sy ? sx : sy;
+    s.style.webkitTransform = "scale(" + scale + ")";
+    s.style.transform = "scale(" + scale + ")";
+  }
+  window.addEventListener("resize", scaleStage);
+  scaleStage();
 
-    // -------------------------------------------------------------
-    // UTILIDADES BASE ES5 (Sin ES6 const/let/arrow/template literals)
-    // -------------------------------------------------------------
-    function getElem(id) {
-        return document.getElementById(id);
+  function setStatus(txt, ok) {
+    var el = document.getElementById("srvStatus");
+    el.innerHTML = txt;
+    el.style.color = ok ? "#4ade80" : "#f87171";
+  }
+
+  function callLuna(method, params, cb) {
+    try {
+      if (window.webOS && webOS.service) {
+        webOS.service.request(SERVICE_URI, {
+          method: method,
+          parameters: params || {},
+          onSuccess: function(res) { cb(null, res); },
+          onFailure: function(err) { cb(err, null); }
+        });
+        return;
+      }
+      if (window.PalmServiceBridge) {
+        var bridge = new PalmServiceBridge();
+        bridge.onservicecallback = function(msg) {
+          var data = JSON.parse(msg);
+          if (data.returnValue === false) cb(data, null);
+          else cb(null, data);
+        };
+        bridge.call(SERVICE_URI + "/" + method, JSON.stringify(params || {}));
+        return;
+      }
+    } catch (e) {}
+    cb({ errorText: "Sin puente Luna" }, null);
+  }
+
+  function renderCards(list) {
+    var row = document.getElementById("cardsRow");
+    var header = document.getElementById("sectionHeader");
+    header.innerHTML = "Catálogo Disponible (" + list.length + " Títulos)";
+    if (!list.length) {
+      row.innerHTML = '<div class="card" style="width:720px"><div class="card-cat">ESTADO DEL CATÁLOGO</div><div class="card-name">No se recibieron títulos del servicio aún</div><div class="card-meta">Verifica que las semillas (seeds) estén cargadas en el servicio</div></div>';
+      return;
     }
-
-    function addClass(elem, cls) {
-        if (elem && elem.classList) {
-            elem.classList.add(cls);
-        }
+    var html = "";
+    for (var i = 0; i < list.length && i < 10; i++) {
+      var it = list[i];
+      var title = it.title || it.name || "Canal / Título " + (i + 1);
+      var cat = it.category || it.group || currentTab.toUpperCase();
+      var meta = it.year || it.tvgId || "Listo para reproducir";
+      html += '<div class="card focusable" data-idx="' + i + '"><div class="card-cat">' + cat + '</div><div class="card-name">' + title + '</div><div class="card-meta">' + meta + '</div></div>';
     }
+    row.innerHTML = html;
+  }
 
-    function removeClass(elem, cls) {
-        if (elem && elem.classList) {
-            elem.classList.remove(cls);
-        }
+  function loadCatalog() {
+    setStatus("Sincronizando catálogo...", true);
+    var method = currentTab === "live" ? "live" : "bootstrap";
+    callLuna(method, { tab: currentTab }, function(err, res) {
+      if (err) {
+        callLuna("status", {}, function(e2, r2) {
+          if (e2) setStatus("Servicio detenido o sin permisos", false);
+          else setStatus("Servicio activo (sin datos en " + method + ")", true);
+        });
+        renderCards([]);
+        return;
+      }
+      setStatus("Servicio Luna Conectado", true);
+      var list = res.items || res.catalog || res.channels || res.trending || [];
+      items = list;
+      if (list.length > 0) {
+        document.getElementById("heroTitle").innerHTML = list[0].title || list[0].name || "Contenido Disponible";
+        document.getElementById("heroDesc").innerHTML = list[0].description || list[0].synopsis || "Presiona Reproducir Ahora o selecciona cualquier tarjeta inferior.";
+      }
+      renderCards(list);
+    });
+  }
+
+  function playItem(item) {
+    if (!item) return;
+    var overlay = document.getElementById("playerOverlay");
+    var video = document.getElementById("videoEl");
+    var hud = document.getElementById("playerHud");
+    overlay.style.display = "block";
+    hud.innerHTML = "Cargando flujo: " + (item.title || item.name || "Video") + "...";
+    var directUrl = item.url || item.streamUrl;
+    if (directUrl) {
+      video.src = directUrl;
+      video.play();
+      return;
     }
+    callLuna("resolve", { id: item.id, url: item.link || "" }, function(err, res) {
+      if (res && (res.streamUrl || res.url)) {
+        video.src = res.streamUrl || res.url;
+        video.play();
+        hud.innerHTML = (item.title || item.name) + " — Presiona ATRÁS para salir";
+      } else {
+        hud.innerHTML = "No se pudo obtener la URL de reproducción. Presiona ATRÁS.";
+      }
+    });
+  }
 
-    function toggleClass(elem, cls, force) {
-        if (elem && elem.classList) {
-            if (typeof force !== 'undefined') {
-                if (force) { elem.classList.add(cls); } else { elem.classList.remove(cls); }
-            } else {
-                elem.classList.toggle(cls);
-            }
-        }
+  function updateFocus() {
+    var focusables = document.querySelectorAll(".nav-item, #searchBox, #btnHeroPlay, #btnHeroReload, .card.focusable");
+    if (!focusables.length) return;
+    if (focusIndex < 0) focusIndex = 0;
+    if (focusIndex >= focusables.length) focusIndex = focusables.length - 1;
+    for (var i = 0; i < focusables.length; i++) {
+      focusables[i].classList.remove("focus");
     }
+    var cur = focusables[focusIndex];
+    cur.classList.add("focus");
+    if (cur.id === "searchBox") cur.focus();
+  }
 
-    function getStorage(key, fallback) {
-        try {
-            var val = localStorage.getItem('xuper_' + key);
-            return val !== null ? JSON.parse(val) : fallback;
-        } catch (e) {
-            return fallback;
-        }
+  document.addEventListener("keydown", function(e) {
+    var code = e.keyCode;
+    var overlay = document.getElementById("playerOverlay");
+    if (overlay.style.display === "block") {
+      if (code === 461 || code === 27 || code === 8) {
+        var v = document.getElementById("videoEl");
+        v.pause();
+        v.src = "";
+        overlay.style.display = "none";
+      }
+      return;
     }
-
-    function setStorage(key, value) {
-        try {
-            localStorage.setItem('xuper_' + key, JSON.stringify(value));
-        } catch (e) {}
+    if (code === 38 || code === 37) { focusIndex--; updateFocus(); }
+    else if (code === 40 || code === 39) { focusIndex++; updateFocus(); }
+    else if (code === 13) {
+      var cur = document.querySelector(".focus");
+      if (!cur) return;
+      if (cur.classList.contains("nav-item")) {
+        var navs = document.querySelectorAll(".nav-item");
+        for (var i = 0; i < navs.length; i++) navs[i].classList.remove("active");
+        cur.classList.add("active");
+        currentTab = cur.getAttribute("data-tab");
+        if (currentTab === "diag") {
+          callLuna("status", {}, function(err, res) {
+            alert(err ? "Error Luna: " + JSON.stringify(err) : "Servicio OK: " + JSON.stringify(res));
+          });
+        } else {
+          loadCatalog();
+        }
+      } else if (cur.id === "btnHeroReload") {
+        loadCatalog();
+      } else if (cur.id === "btnHeroPlay") {
+        playItem(items[0]);
+      } else if (cur.classList.contains("card")) {
+        var idx = parseInt(cur.getAttribute("data-idx"), 10);
+        playItem(items[idx]);
+      }
     }
-
-    // -------------------------------------------------------------
-    // PUENTE DE COMUNICACIÓN EN 4 CAPAS (ServiceBridge ES5)
-    // -------------------------------------------------------------
-    var ServiceBridge = {
-        activeLayer: 0,
-        baseUrl: '',
-
-        init: function() {
-            var match = window.location.search.match(/[?&]service=([^&]+)/);
-            if (match && match[1]) {
-                this.baseUrl = decodeURIComponent(match[1]);
-                this.activeLayer = 1; // Layer 1: Dev HTTP Proxy
-            } else if (window.webOS && window.webOS.service) {
-                this.activeLayer = 2; // Layer 2: Luna/Palm WebOSTV.js Bridge
-            } else if (window.PalmServiceBridge) {
-                this.activeLayer = 3; // Layer 3: Direct Native C++ PalmServiceBridge
-            } else {
-                this.activeLayer = 4; // Layer 4: Snapshot / Fallback interno
-            }
-        },
-
-        request: function(method, params, callback) {
-            var self = this;
-            params = params || {};
-
-            // Capa 1: Servidor Node Local via HTTP (Para Pruebas en PC)
-            if (this.activeLayer === 1) {
-                var xhr = new XMLHttpRequest();
-                var url = this.baseUrl + '/service/' + method;
-                xhr.open('POST', url, true);
-                xhr.setRequestHeader('Content-Type', 'application/json');
-                xhr.onreadystatechange = function() {
-                    if (xhr.readyState === 4) {
-                        if (xhr.status === 200) {
-                            try {
-                                var res = JSON.parse(xhr.responseText);
-                                callback(null, res);
-                            } catch (e) {
-                                callback(e, null);
-                            }
-                        } else {
-                            callback(new Error('HTTP Error ' + xhr.status), null);
-                        }
-                    }
-                };
-                xhr.send(JSON.stringify(params));
-                return;
-            }
-
-            // Capa 2: webOS.service.request (luna:// -> palm://)
-            if (this.activeLayer === 2) {
-                var serviceUri = 'luna://com.webosflux.xuptertv.fidelity.service/' + method;
-                window.webOS.service.request(serviceUri, {
-                    method: method,
-                    parameters: params,
-                    onSuccess: function(res) { callback(null, res); },
-                    onFailure: function(err) {
-                        // Reintento automático en palm:// para webOS 1/2/3.x
-                        var fallbackUri = 'palm://com.webosflux.xuptertv.fidelity.service/' + method;
-                        window.webOS.service.request(fallbackUri, {
-                            method: method,
-                            parameters: params,
-                            onSuccess: function(res2) { callback(null, res2); },
-                            onFailure: function(err2) {
-                                self.fallbackRequest(method, params, callback);
-                            }
-                        });
-                    }
-                });
-                return;
-            }
-
-            // Capa 3: Native PalmServiceBridge C++ Direct Call
-            if (this.activeLayer === 3) {
-                try {
-                    var bridge = new window.PalmServiceBridge();
-                    bridge.onservicecallback = function(msg) {
-                        try {
-                            var parsed = JSON.parse(msg);
-                            callback(null, parsed);
-                        } catch (err) {
-                            callback(err, null);
-                        }
-                    };
-                    var reqUri = 'luna://com.webosflux.xuptertv.fidelity.service/' + method;
-                    bridge.call(reqUri, JSON.stringify(params));
-                    return;
-                } catch (e) {
-                    this.fallbackRequest(method, params, callback);
-                    return;
-                }
-            }
-
-            // Capa 4: Mock Snapshot Fallback
-            this.fallbackRequest(method, params, callback);
-        },
-
-        fallbackRequest: function(method, params, callback) {
-            // Snapshot local garantizado para que la app nunca se quede en blanco
-            setTimeout(function() {
-                if (method === 'ping') {
-                    callback(null, { returnValue: true, ffmpeg: true, doh: true });
-                } else if (method === 'home') {
-                    callback(null, {
-                        returnValue: true,
-                        hero: { id: 'm1', title: 'Cyberpunk 2099', overview: 'Una aventura distópica futurista.', poster: 'https://placehold.co/600x900/1e293b/ffffff?text=Cyberpunk+2099' },
-                        trending: [
-                            { id: 'm1', title: 'Cyberpunk 2099', poster: 'https://placehold.co/300x450/0f172a/ffffff?text=Cyberpunk+2099', type: 'movie' },
-                            { id: 's1', title: 'Starlight Saga', poster: 'https://placehold.co/300x450/1e1b4b/ffffff?text=Starlight+Saga', type: 'series' }
-                        ],
-                        movies: [
-                            { id: 'm2', title: 'El Gran Escape', poster: 'https://placehold.co/300x450/1c1917/ffffff?text=El+Gran+Escape', type: 'movie' }
-                        ],
-                        series: [
-                            { id: 's2', title: 'Horizontes', poster: 'https://placehold.co/300x450/064e3b/ffffff?text=Horizontes', type: 'series' }
-                        ]
-                    });
-                } else if (method === 'liveCategories') {
-                    callback(null, {
-                        returnValue: true,
-                        categories: [
-                            { id: 'cat_all', name: 'Todos los Canales' },
-                            { id: 'cat_sports', name: 'Deportes Premium' },
-                            { id: 'cat_news', name: 'Noticias 24/7' }
-                        ]
-                    });
-                } else if (method === 'liveChannels') {
-                    callback(null, {
-                        returnValue: true,
-                        channels: [
-                            { id: 'c1', number: 101, name: 'Xuper Sports HD', logo: 'https://placehold.co/200x200/1d4ed8/ffffff?text=Sports', streamUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' },
-                            { id: 'c2', number: 102, name: 'Xuper News 24', logo: 'https://placehold.co/200x200/b91c1c/ffffff?text=News', streamUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4' }
-                        ]
-                    });
-                } else if (method === 'resolve') {
-                    callback(null, { returnValue: true, url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' });
-                } else if (method === 'resolveSmooth') {
-                    callback(null, { returnValue: true, url: 'http://127.0.0.1:8787/s/demo_token.mp4' });
-                } else {
-                    callback(null, { returnValue: true, data: [] });
-                }
-            }, 50);
-        }
-    };
-
-    // -------------------------------------------------------------
-    // MOTOR PRINCIPAL APLICACIÓN XUPERTV ULTRA
-    // -------------------------------------------------------------
-    var XuperApp = {
-        currentScreen: 'home',
-        focusedElem: null,
-        currentVodItem: null,
-        currentLiveChannel: null,
-        favoritesList: [],
-        smoothModeEnabled: true,
-        playerMode: 'vod', // 'vod' o 'live'
-        relayWatchdogTimer: null,
-
-        init: function() {
-            ServiceBridge.init();
-            this.favoritesList = getStorage('favorites', []);
-            this.setupResolutionScaler();
-            this.bindKeyEvents();
-            this.loadHomeScreen();
-            this.updateDiagInfo();
-        },
-
-        // Auto-escalador Universal para 720p, 1080p, 4K y solución al bug de webOS 3.4
-        setupResolutionScaler: function() {
-            var self = this;
-            function scale() {
-                var vw = window.innerWidth || document.documentElement.clientWidth || 1920;
-                var vh = window.innerHeight || document.documentElement.clientHeight || 1080;
-                var scaleFactor = Math.min(vw / 1920, vh / 1080);
-                var overscan = getStorage('overscan', 0);
-                if (overscan > 0) {
-                    scaleFactor = scaleFactor * (1 - (overscan / 100));
-                }
-                var stage = getElem('app-stage');
-                if (stage) {
-                    stage.style.transform = 'translate(-50%, -50%) scale(' + scaleFactor + ')';
-                }
-            }
-            window.addEventListener('resize', scale);
-            scale();
-        },
-
-        setOverscan: function(pct) {
-            setStorage('overscan', pct);
-            this.setupResolutionScaler();
-            this.showToast('Margen de pantalla ajustado a ' + pct + '%');
-        },
-
-        // Gestor de Pantallas
-        showScreen: function(screenId, categoryType) {
-            var screens = document.querySelectorAll('.view-screen');
-            for (var i = 0; i < screens.length; i++) {
-                addClass(screens[i], 'hidden');
-            }
-            
-            var target = getElem('screen-' + screenId);
-            if (target) {
-                removeClass(target, 'hidden');
-                this.currentScreen = screenId;
-            }
-
-            // Actualizar botones del menú superior
-            var navBtns = document.querySelectorAll('.nav-btn');
-            for (var j = 0; j < navBtns.length; j++) {
-                var btn = navBtns[j];
-                if (btn.getAttribute('data-screen') === (categoryType || screenId)) {
-                    addClass(btn, 'bg-blue-600');
-                    addClass(btn, 'text-white');
-                    removeClass(btn, 'text-gray-300');
-                } else {
-                    removeClass(btn, 'bg-blue-600');
-                    removeClass(btn, 'text-white');
-                    addClass(btn, 'text-gray-300');
-                }
-            }
-
-            // Cargar datos según pantalla
-            if (screenId === 'live') {
-                this.loadLiveTV();
-            } else if (screenId === 'category') {
-                this.loadCategoryScreen(categoryType || 'movies');
-            }
-
-            // Re-enfocar primer elemento visible
-            this.focusFirstInScreen();
-        },
-
-        // Carga de Datos de Inicio
-        loadHomeScreen: function() {
-            var self = this;
-            ServiceBridge.request('home', {}, function(err, res) {
-                if (!err && res && res.returnValue) {
-                    if (res.hero) {
-                        self.currentVodItem = res.hero;
-                        getElem('hero-title').innerText = res.hero.title || 'Destacado';
-                        getElem('hero-desc').innerText = res.hero.overview || '';
-                        if (res.hero.poster) {
-                            getElem('hero-banner').style.backgroundImage = 'url("' + res.hero.poster + '")';
-                        }
-                    }
-                    self.renderRail('rail-trending', res.trending || []);
-                    self.renderRail('rail-movies', res.movies || []);
-                    self.renderRail('rail-series', res.series || []);
-                    self.focusFirstInScreen();
-                }
-            });
-        },
-
-        renderRail: function(containerId, items) {
-            var container = getElem(containerId);
-            if (!container) return;
-            container.innerHTML = '';
-            for (var i = 0; i < items.length; i++) {
-                var item = items[i];
-                var card = document.createElement('div');
-                card.className = 'focusable flex-shrink-0 w-44 h-64 rounded-2xl overflow-hidden glass-panel relative cursor-pointer';
-                card.setAttribute('tabindex', '0');
-                card.innerHTML = '<img src="' + (item.poster || '') + '" class="w-full h-full object-cover" onerror="this.src=\'https://placehold.co/300x450/111827/ffffff?text=XuperTV\'">' +
-                                 '<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-3">' +
-                                 '<span class="text-xs font-bold text-white line-clamp-1">' + item.title + '</span></div>';
-                (function(it) {
-                    card.onclick = function() { XuperApp.openDetail(it); };
-                })(item);
-                container.appendChild(card);
-            }
-        },
-
-        // Carga de TV en Vivo (EPG 3 Columnas)
-        loadLiveTV: function() {
-            var self = this;
-            ServiceBridge.request('liveCategories', {}, function(err, res) {
-                if (!err && res && res.categories) {
-                    var container = getElem('live-categories');
-                    container.innerHTML = '';
-                    for (var i = 0; i < res.categories.length; i++) {
-                        var cat = res.categories[i];
-                        var btn = document.createElement('button');
-                        btn.className = 'focusable focusable-list-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-gray-300 hover:bg-gray-800/50 transition';
-                        btn.innerText = cat.name;
-                        (function(c) {
-                            btn.onclick = function() { self.loadChannelsForCat(c.id, c.name); };
-                        })(cat);
-                        container.appendChild(btn);
-                    }
-                }
-            });
-            this.loadChannelsForCat('cat_all', 'Todos los Canales');
-        },
-
-        loadChannelsForCat: function(catId, catName) {
-            var self = this;
-            getElem('lbl-live-cat-title').innerText = catName;
-            ServiceBridge.request('liveChannels', { categoryId: catId }, function(err, res) {
-                if (!err && res && res.channels) {
-                    var container = getElem('live-channels');
-                    container.innerHTML = '';
-                    for (var i = 0; i < res.channels.length; i++) {
-                        var ch = res.channels[i];
-                        var isFav = self.isFavorite(ch.id);
-                        var item = document.createElement('div');
-                        item.className = 'focusable focusable-list-item flex items-center justify-between px-4 py-3 rounded-xl glass-panel cursor-pointer mb-2';
-                        item.innerHTML = '<div class="flex items-center space-x-3">' +
-                                         '<span class="text-xs font-mono font-bold text-blue-400">CH ' + ch.number + '</span>' +
-                                         '<span class="text-sm font-bold text-white">' + ch.name + '</span></div>' +
-                                         '<i class="fa-star ' + (isFav ? 'fa-solid text-yellow-400' : 'fa-regular text-gray-600') + '"></i>';
-                        (function(channel) {
-                            item.onclick = function() { self.selectLiveChannel(channel); };
-                        })(ch);
-                        container.appendChild(item);
-                    }
-                    if (res.channels.length > 0) {
-                        self.selectLiveChannel(res.channels[0]);
-                    }
-                }
-            });
-        },
-
-        selectLiveChannel: function(channel) {
-            this.currentLiveChannel = channel;
-            getElem('live-channel-name').innerText = channel.name;
-            getElem('live-channel-num').innerText = 'CH ' + channel.number;
-            if (channel.logo) {
-                getElem('live-preview-logo').src = channel.logo;
-                getElem('live-preview-logo').style.display = 'block';
-            }
-        },
-
-        toggleLiveFavFilter: function() {
-            this.showToast('Filtro de favoritos actualizado');
-        },
-
-        toggleFavoriteCurrentChannel: function() {
-            if (!this.currentLiveChannel) return;
-            var id = this.currentLiveChannel.id;
-            var idx = this.favoritesList.indexOf(id);
-            if (idx >= 0) {
-                this.favoritesList.splice(idx, 1);
-                this.showToast('Canal eliminado de Favoritos');
-            } else {
-                this.favoritesList.push(id);
-                this.showToast('Canal añadido a Favoritos [Tecla Amarilla]');
-            }
-            setStorage('favorites', this.favoritesList);
-            this.loadLiveTV();
-        },
-
-        isFavorite: function(id) {
-            return this.favoritesList.indexOf(id) >= 0;
-        },
-
-        // Pantalla de Detalle VOD
-        openDetail: function(item) {
-            var self = this;
-            this.currentVodItem = item;
-            getElem('detail-title').innerText = item.title;
-            getElem('detail-poster').src = item.poster || '';
-            
-            // Cargar persistencia per-title de Modo Fluido
-            this.smoothModeEnabled = getStorage('smooth_' + (item.seriesId || item.id), true);
-            this.updateSmoothButtonUI();
-
-            this.showScreen('detail');
-
-            ServiceBridge.request('detail', { id: item.id }, function(err, res) {
-                if (!err && res) {
-                    if (res.overview) getElem('detail-overview').innerText = res.overview;
-                    if (res.year) getElem('detail-year').innerText = res.year;
-                    if (res.genre) getElem('detail-genre').innerText = res.genre;
-                }
-            });
-        },
-
-        openHeroDetail: function() {
-            if (this.currentVodItem) {
-                this.openDetail(this.currentVodItem);
-            }
-        },
-
-        toggleSmoothMode: function() {
-            this.smoothModeEnabled = !this.smoothModeEnabled;
-            if (this.currentVodItem) {
-                setStorage('smooth_' + (this.currentVodItem.seriesId || this.currentVodItem.id), this.smoothModeEnabled);
-            }
-            this.updateSmoothButtonUI();
-            this.showToast('Modo Fluido ' + (this.smoothModeEnabled ? 'ACTIVADO (fMP4 Local Relay)' : 'DESACTIVADO (Direct Stream)'));
-        },
-
-        updateSmoothButtonUI: function() {
-            var icon = getElem('icon-smooth-check');
-            if (icon) {
-                icon.className = this.smoothModeEnabled ? 'fa-solid fa-toggle-on text-blue-500 text-lg' : 'fa-solid fa-toggle-off text-gray-500 text-lg';
-            }
-        },
-
-        // -------------------------------------------------------------
-        // CONTRATO Y MOTOR DE REPRODUCCIÓN (Anti-Freeze Strict Contract)
-        // -------------------------------------------------------------
-        playHero: function() {
-            if (this.currentVodItem) {
-                this.playVodItem(this.currentVodItem);
-            }
-        },
-
-        playVodCurrent: function() {
-            if (this.currentVodItem) {
-                this.playVodItem(this.currentVodItem);
-            }
-        },
-
-        playCurrentLiveChannel: function() {
-            if (this.currentLiveChannel) {
-                this.playLiveStream(this.currentLiveChannel);
-            }
-        },
-
-        playVodItem: function(item) {
-            var self = this;
-            this.playerMode = 'vod';
-            getElem('player-title').innerText = item.title;
-            getElem('player-subtitle').innerText = 'Película / Serie VOD';
-            addClass(getElem('badge-live-tag'), 'hidden');
-            removeClass(getElem('player-progress-box'), 'hidden');
-
-            var method = this.smoothModeEnabled ? 'resolveSmooth' : 'resolve';
-            var payload = { id: item.id, forceRelay: true, container: 'mp4' };
-
-            ServiceBridge.request(method, payload, function(err, res) {
-                if (!err && res && res.url) {
-                    self.startVideoPlayback(res.url, false);
-                } else {
-                    self.showToast('Error al resolver enlace de reproducción.');
-                }
-            });
-        },
-
-        playLiveStream: function(channel) {
-            var self = this;
-            this.playerMode = 'live';
-            getElem('player-title').innerText = channel.name;
-            getElem('player-subtitle').innerText = 'Canal ' + channel.number + ' - Transmisión en directo';
-            removeClass(getElem('badge-live-tag'), 'hidden');
-            addClass(getElem('player-progress-box'), 'hidden');
-
-            ServiceBridge.request('resolveLive', { id: channel.id }, function(err, res) {
-                var streamUrl = (res && res.url) ? res.url : channel.streamUrl;
-                if (streamUrl) {
-                    self.startVideoPlayback(streamUrl, true);
-                } else {
-                    self.showToast('Canal en vivo no disponible.');
-                }
-            });
-        },
-
-        startVideoPlayback: function(url, isLive) {
-            var self = this;
-            var video = getElem('main-video');
-            var playerContainer = getElem('player-container');
-            
-            removeClass(playerContainer, 'hidden');
-            getElem('badge-player-mode').innerText = this.smoothModeEnabled ? 'Modo Fluido (fMP4)' : 'Modo Normal';
-
-            video.src = url;
-            video.load();
-            video.play();
-
-            // Limpiar watchdog previo
-            if (this.relayWatchdogTimer) {
-                clearTimeout(this.relayWatchdogTimer);
-                this.relayWatchdogTimer = null;
-            }
-
-            // Watchdog de 15 segundos para Modo Fluido (Fallback automático a Modo Normal si readyState < 2)
-            if (this.smoothModeEnabled && !isLive) {
-                this.relayWatchdogTimer = setTimeout(function() {
-                    if (video.readyState < 2) {
-                        self.showToast('Modo Fluido falló al iniciar. Reorientando a Modo Normal...');
-                        self.smoothModeEnabled = false;
-                        if (self.currentVodItem) {
-                            setStorage('smooth_' + (self.currentVodItem.seriesId || self.currentVodItem.id), false);
-                        }
-                        self.playVodItem(self.currentVodItem);
-                    }
-                }, 15000);
-            }
-
-            // Eventos del Reproductor
-            video.oncanplay = function() {
-                if (self.relayWatchdogTimer) {
-                    clearTimeout(self.relayWatchdogTimer);
-                    self.relayWatchdogTimer = null;
-                }
-            };
-
-            video.ontimeupdate = function() {
-                // CONTRATO STRICTO: En TV en Vivo NUNCA se altera currentTime ni se busca
-                if (self.playerMode === 'live') return;
-
-                if (video.duration) {
-                    var pct = (video.currentTime / video.duration) * 100;
-                    getElem('player-progress-bar').style.width = pct + '%';
-                    getElem('player-time-current').innerText = self.formatTime(video.currentTime);
-                    getElem('player-time-total').innerText = self.formatTime(video.duration);
-                }
-            };
-
-            video.onerror = function() {
-                if (self.playerMode === 'vod' && self.smoothModeEnabled) {
-                    self.showToast('Error de decodificación en Modo Fluido. Conmutando a Modo Normal...');
-                    self.smoothModeEnabled = false;
-                    self.playVodItem(self.currentVodItem);
-                } else {
-                    self.showToast('Error MEDIA_ERR_DECODE en reproductor nativo.');
-                }
-            };
-
-            this.focusElement(getElem('btn-player-toggle'));
-        },
-
-        closePlayer: function() {
-            var video = getElem('main-video');
-            if (video) {
-                video.pause();
-                video.src = '';
-            }
-            if (this.relayWatchdogTimer) {
-                clearTimeout(this.relayWatchdogTimer);
-                this.relayWatchdogTimer = null;
-            }
-            addClass(getElem('player-container'), 'hidden');
-            this.focusFirstInScreen();
-        },
-
-        togglePlayPause: function() {
-            var video = getElem('main-video');
-            var icon = getElem('icon-player-toggle');
-            if (video.paused) {
-                video.play();
-                icon.className = 'fa-solid fa-pause';
-            } else {
-                video.pause();
-                icon.className = 'fa-solid fa-play';
-            }
-        },
-
-        seekVideo: function(seconds) {
-            // Regla anti-congelamiento: NUNCA hacer seek en TV en Vivo
-            if (this.playerMode === 'live') return;
-
-            var video = getElem('main-video');
-            if (video && video.duration) {
-                video.currentTime = Math.max(0, Math.min(video.duration, video.currentTime + seconds));
-            }
-        },
-
-        cycleAudioTrack: function() {
-            this.showToast('Pista de audio: Español Latino (Predeterminado)');
-        },
-
-        cycleSubtitles: function() {
-            this.showToast('Subtítulos: Desactivados');
-        },
-
-        formatTime: function(sec) {
-            var m = Math.floor(sec / 60);
-            var s = Math.floor(sec % 60);
-            return (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
-        },
-
-        // -------------------------------------------------------------
-        // CONTROL REMOTO D-PAD Y NAVEGACIÓN ESPACIAL
-        // -------------------------------------------------------------
-        bindKeyEvents: function() {
-            var self = this;
-            document.addEventListener('keydown', function(e) {
-                var keyCode = e.keyCode || e.which;
-
-                // Controles en Reproductor
-                if (!getElem('player-container').classList.contains('hidden')) {
-                    if (keyCode === 461 || keyCode === 8 || keyCode === 27) { // BACK
-                        self.closePlayer();
-                        e.preventDefault();
-                    } else if (keyCode === 37) { // LEFT
-                        self.seekVideo(-10);
-                    } else if (keyCode === 39) { // RIGHT
-                        self.seekVideo(10);
-                    } else if (keyCode === 13 || keyCode === 32 || keyCode === 415 || keyCode === 19) { // OK / PLAY / PAUSE
-                        self.togglePlayPause();
-                    }
-                    return;
-                }
-
-                // Tecla Amarilla (keycode 405 o tecla 'y')
-                if (keyCode === 405 || keyCode === 89) {
-                    if (self.currentScreen === 'live') {
-                        self.toggleFavoriteCurrentChannel();
-                        e.preventDefault();
-                        return;
-                    }
-                }
-
-                // Navegación D-Pad Estándar (38: UP, 40: DOWN, 37: LEFT, 39: RIGHT, 13: ENTER, 461: BACK)
-                if (keyCode === 38) { self.navigateSpatial('up'); e.preventDefault(); }
-                else if (keyCode === 40) { self.navigateSpatial('down'); e.preventDefault(); }
-                else if (keyCode === 37) { self.navigateSpatial('left'); e.preventDefault(); }
-                else if (keyCode === 39) { self.navigateSpatial('right'); e.preventDefault(); }
-                else if (keyCode === 13) {
-                    if (self.focusedElem) self.focusedElem.click();
-                    e.preventDefault();
-                } else if (keyCode === 461 || keyCode === 8 || keyCode === 27) {
-                    if (self.currentScreen !== 'home') {
-                        self.showScreen('home');
-                    }
-                    e.preventDefault();
-                }
-            });
-        },
-
-        focusFirstInScreen: function() {
-            var activeScreen = getElem('screen-' + this.currentScreen);
-            if (!activeScreen) return;
-            var focusables = activeScreen.querySelectorAll('.focusable');
-            if (focusables.length > 0) {
-                this.focusElement(focusables[0]);
-            } else {
-                var navFirst = getElem('top-nav').querySelector('.focusable');
-                if (navFirst) this.focusElement(navFirst);
-            }
-        },
-
-        focusElement: function(elem) {
-            if (!elem) return;
-            if (this.focusedElem) {
-                removeClass(this.focusedElem, 'focused');
-            }
-            this.focusedElem = elem;
-            addClass(elem, 'focused');
-            elem.focus();
-
-            // Scroll automático para mantener elemento visible
-            if (elem.scrollIntoView) {
-                elem.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-            }
-        },
-
-        navigateSpatial: function(direction) {
-            var allFocusables = Array.prototype.slice.call(document.querySelectorAll('#app-stage .focusable:not(.hidden)'));
-            if (allFocusables.length === 0) return;
-
-            if (!this.focusedElem) {
-                this.focusElement(allFocusables[0]);
-                return;
-            }
-
-            var currentRect = this.focusedElem.getBoundingClientRect();
-            var bestCandidate = null;
-            var minDistance = Infinity;
-
-            for (var i = 0; i < allFocusables.length; i++) {
-                var candidate = allFocusables[i];
-                if (candidate === this.focusedElem) continue;
-
-                var candRect = candidate.getBoundingClientRect();
-                var dx = candRect.left + (candRect.width / 2) - (currentRect.left + (currentRect.width / 2));
-                var dy = candRect.top + (candRect.height / 2) - (currentRect.top + (currentRect.height / 2));
-
-                var isValid = false;
-                if (direction === 'up' && dy < -5) isValid = true;
-                if (direction === 'down' && dy > 5) isValid = true;
-                if (direction === 'left' && dx < -5) isValid = true;
-                if (direction === 'right' && dx > 5) isValid = true;
-
-                if (isValid) {
-                    var dist = Math.sqrt(dx * dx + dy * dy);
-                    if (dist < minDistance) {
-                        minDistance = dist;
-                        bestCandidate = candidate;
-                    }
-                }
-            }
-
-            // En rieles horizontales, permitir wrap-around infinito si no encuentra siguiente a la derecha
-            if (!bestCandidate && direction === 'right' && this.focusedElem.parentElement.classList.contains('catalog-rail')) {
-                var railChildren = this.focusedElem.parentElement.querySelectorAll('.focusable');
-                if (railChildren.length > 0) bestCandidate = railChildren[0];
-            }
-
-            if (bestCandidate) {
-                this.focusElement(bestCandidate);
-            }
-        },
-
-        showToast: function(msg) {
-            var container = getElem('toast-container');
-            if (!container) return;
-            var toast = document.createElement('div');
-            toast.className = 'glass-panel border-l-4 border-blue-500 text-white text-xs px-5 py-3.5 rounded-xl shadow-2xl toast-animate flex items-center space-x-3';
-            toast.innerHTML = '<i class="fa-solid fa-circle-info text-blue-400 text-base"></i><span>' + msg + '</span>';
-            container.appendChild(toast);
-            setTimeout(function() {
-                if (toast.parentNode) toast.parentNode.removeChild(toast);
-            }, 4500);
-        },
-
-        updateDiagInfo: function() {
-            var layerTxt = 'Capa 4 (Snapshot Fallback)';
-            if (ServiceBridge.activeLayer === 1) layerTxt = 'Capa 1 (HTTP Dev Server 8910)';
-            if (ServiceBridge.activeLayer === 2) layerTxt = 'Capa 2 (luna:// WebOSTV.js)';
-            if (ServiceBridge.activeLayer === 3) layerTxt = 'Capa 3 (PalmServiceBridge C++)';
-            getElem('diag-layer-status').innerText = layerTxt;
-
-            ServiceBridge.request('ping', {}, function(err, res) {
-                if (!err && res && res.returnValue) {
-                    getElem('diag-node-status').innerText = 'CONECTADO Y ACTIVO';
-                    getElem('diag-node-status').className = 'text-green-400 font-bold';
-                } else {
-                    getElem('diag-node-status').innerText = 'Modo Respaldo';
-                    getElem('diag-node-status').className = 'text-yellow-400 font-bold';
-                }
-            });
-        }
-    };
-
-    // -------------------------------------------------------------
-    // API GLOBAL Y AUTO-TEST DIAGNÓSTICO WINDOW.__XUPER (0 ERRORES)
-    // -------------------------------------------------------------
-    window.__xuper = {
-        state: function() {
-            return {
-                screen: XuperApp.currentScreen,
-                layer: ServiceBridge.activeLayer,
-                smoothMode: XuperApp.smoothModeEnabled,
-                playerMode: XuperApp.playerMode
-            };
-        },
-        key: function(code) {
-            var event = new KeyboardEvent('keydown', { keyCode: code, which: code });
-            document.dispatchEvent(event);
-        },
-        show: function(screen) {
-            XuperApp.showScreen(screen);
-        },
-        service: function(method, params, cb) {
-            ServiceBridge.request(method, params, cb);
-        },
-
-        // EJECUCIÓN DEL AUTO-TEST EN TIEMPO REAL
-        runSelfTest: function() {
-            var logOutput = getElem('test-log-output');
-            var badge = getElem('test-badge-result');
-            logOutput.innerHTML = '';
-            
-            function log(msg, type) {
-                var item = document.createElement('div');
-                if (type === 'pass') {
-                    item.className = 'text-green-400 font-bold';
-                    item.innerText = '[OK] ' + msg;
-                } else if (type === 'fail') {
-                    item.className = 'text-red-400 font-bold';
-                    item.innerText = '[FAIL] ' + msg;
-                } else {
-                    item.className = 'text-blue-300';
-                    item.innerText = '[TEST] ' + msg;
-                }
-                logOutput.appendChild(item);
-                logOutput.scrollTop = logOutput.scrollHeight;
-            }
-
-            log('Iniciando Test de Integración XuperTV Ultra...', 'info');
-            var errors = 0;
-
-            // Test 1: ES5 Strict Compliance Assertion
-            try {
-                var testVar = 10;
-                var fnTest = function(a, b) { return a + b; };
-                if (fnTest(testVar, 5) === 15) {
-                    log('1. Compatibilidad ES5 y funciones estándar: CORRECTO', 'pass');
-                } else {
-                    errors++;
-                    log('1. Fallo en evaluación de expresiones ES5', 'fail');
-                }
-            } catch (e1) {
-                errors++;
-                log('1. Error de sintaxis ES5: ' + e1.message, 'fail');
-            }
-
-            // Test 2: Scaling Calculations
-            try {
-                var vw = 1920, vh = 1080;
-                var scale = Math.min(vw / 1920, vh / 1080);
-                if (scale === 1) {
-                    log('2. Auto-escalador 1080p Master Stage: CORRECTO', 'pass');
-                } else {
-                    errors++;
-                    log('2. Factor de escala incorrecto', 'fail');
-                }
-            } catch (e2) {
-                errors++;
-                log('2. Fallo en cálculo de escala: ' + e2.message, 'fail');
-            }
-
-            // Test 3: Service Bridge layers verification
-            try {
-                ServiceBridge.request('ping', {}, function(err, res) {
-                    if (!err && res) {
-                        log('3. Capa de Comunicación ServiceBridge (' + ServiceBridge.activeLayer + '): CORRECTO', 'pass');
-                    } else {
-                        errors++;
-                        log('3. Error al llamar servicio ping', 'fail');
-                    }
-                });
-            } catch (e3) {
-                errors++;
-                log('3. Fallo en puente Luna/Service: ' + e3.message, 'fail');
-            }
-
-            // Test 4: Playback Rules Contract (TV en vivo no seek)
-            try {
-                XuperApp.playerMode = 'live';
-                var prevTime = 10;
-                XuperApp.seekVideo(10);
-                // Si playerMode === 'live', el seek no debe haber modificado nada
-                log('4. Regla de Oro TV en Vivo (Cero Seeks / Anti-Demuxer Freeze): CORRECTO', 'pass');
-            } catch (e4) {
-                errors++;
-                log('4. Violación de contrato de reproducción: ' + e4.message, 'fail');
-            }
-
-            // Test 5: Watchdog Relay Contract
-            try {
-                if (typeof XuperApp.startVideoPlayback === 'function') {
-                    log('5. Temporizador Watchdog 15s Modo Fluido: CORRECTO', 'pass');
-                }
-            } catch (e5) {
-                errors++;
-                log('5. Fallo en inicialización de Watchdog', 'fail');
-            }
-
-            // Evaluación Final
-            setTimeout(function() {
-                if (errors === 0) {
-                    badge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-green-600 text-white';
-                    badge.innerText = '0 ERRORES DETECTADOS';
-                    log('=========================================', 'info');
-                    log('PRUEBA FINALIZADA: 0 ERRORES ENCONTRADOS.', 'pass');
-                    log('Sistema listo para empaquetado IPK webOS.', 'pass');
-                } else {
-                    badge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-red-600 text-white';
-                    badge.innerText = errors + ' ERRORES DETECTADOS';
-                }
-            }, 300);
-        }
-    };
-
-    // Inicializar aplicación al cargar la ventana
-    window.onload = function() {
-        XuperApp.init();
-    };
-    </script>
+  });
+
+  loadCatalog();
+  updateFocus();
+})();
+</script>
 </body>
 </html>
