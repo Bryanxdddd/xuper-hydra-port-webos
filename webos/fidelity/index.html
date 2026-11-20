@@ -6,241 +6,212 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { width: 100%; height: 100%; background: #070b14; color: #f8fafc; font-family: Arial, Helvetica, sans-serif; overflow: hidden; }
-#stage { position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; background: #070b14; -webkit-transform-origin: 0 0; transform-origin: 0 0; overflow: hidden; }
-#sidebar { position: absolute; top: 0; left: 0; width: 280px; height: 1080px; background: #0c1322; border-right: 2px solid #1e293b; padding: 40px 24px; }
-.brand { font-size: 36px; font-weight: bold; color: #ffffff; letter-spacing: 1px; margin-bottom: 10px; }
-.brand span { color: #e50914; }
-.badge { display: inline-block; background: #1e293b; color: #38bdf8; font-size: 16px; padding: 6px 12px; border-radius: 6px; margin-bottom: 42px; }
-.nav-item { display: block; width: 100%; text-align: left; background: transparent; border: 2px solid transparent; color: #94a3b8; font-size: 24px; font-weight: bold; padding: 18px 20px; border-radius: 12px; margin-bottom: 14px; }
+.nav-item { display: block; width: 100%; text-align: left; background: transparent; border: 2px solid transparent; color: #94a3b8; font-size: 24px; font-weight: bold; padding: 18px 20px; border-radius: 12px; margin-bottom: 14px; cursor: pointer; }
 .nav-item.active { background: #162036; color: #ffffff; border-left: 6px solid #e50914; }
-.nav-item.focus { background: #e50914; color: #ffffff; border-color: #ffffff; }
-#main { position: absolute; top: 0; left: 280px; width: 1640px; height: 1080px; padding: 36px 48px; overflow: hidden; }
-#topbar { height: 64px; margin-bottom: 24px; }
-#searchBox { float: left; width: 520px; height: 56px; background: #111827; border: 2px solid #334155; border-radius: 10px; color: #ffffff; font-size: 22px; padding: 0 18px; }
-#searchBox.focus { border-color: #38bdf8; background: #1e293b; }
-#srvStatus { float: right; background: #111827; border: 2px solid #1e293b; border-radius: 10px; padding: 14px 22px; font-size: 20px; color: #38bdf8; }
-#hero { position: relative; width: 1544px; height: 340px; background: #111827; border: 2px solid #1e293b; border-radius: 18px; padding: 38px 44px; margin-bottom: 34px; }
-#heroTag { display: inline-block; background: #e50914; color: #ffffff; font-size: 16px; font-weight: bold; padding: 6px 14px; border-radius: 6px; margin-bottom: 14px; }
-#heroTitle { font-size: 46px; font-weight: bold; color: #ffffff; margin-bottom: 12px; }
-#heroDesc { font-size: 22px; color: #cbd5e1; width: 920px; line-height: 1.4; margin-bottom: 24px; }
-.btn { display: inline-block; padding: 14px 30px; font-size: 22px; font-weight: bold; border-radius: 10px; border: 3px solid transparent; margin-right: 16px; }
+.nav-item.focus, .nav-item:hover { background: #e50914; color: #ffffff; border-color: #ffffff; }
+.btn { display: inline-block; padding: 14px 30px; font-size: 22px; font-weight: bold; border-radius: 10px; border: 3px solid transparent; margin-right: 16px; cursor: pointer; }
 .btn-play { background: #e50914; color: #ffffff; }
 .btn-sec { background: #1e293b; color: #f8fafc; }
-.btn.focus { border-color: #38bdf8; -webkit-transform: scale(1.05); transform: scale(1.05); }
-.sec-title { font-size: 26px; font-weight: bold; color: #f1f5f9; margin-bottom: 16px; }
-#cardsRow { width: 1560px; height: 430px; overflow: hidden; }
-.card { float: left; width: 286px; height: 200px; background: #111827; border: 3px solid #1e293b; border-radius: 14px; padding: 20px; margin-right: 22px; margin-bottom: 22px; position: relative; }
-.card.focus { border-color: #e50914; background: #1b263b; -webkit-transform: scale(1.04); transform: scale(1.04); }
+.btn.focus, .btn:hover { border-color: #38bdf8; -webkit-transform: scale(1.05); transform: scale(1.05); }
+.card { float: left; width: 286px; height: 205px; background: #111827; border: 3px solid #1e293b; border-radius: 14px; padding: 20px; margin-right: 22px; margin-bottom: 22px; position: relative; cursor: pointer; overflow: hidden; }
+.card.focus, .card:hover { border-color: #e50914; background: #1b263b; -webkit-transform: scale(1.04); transform: scale(1.04); }
 .card-cat { font-size: 15px; color: #38bdf8; text-transform: uppercase; margin-bottom: 8px; }
-.card-name { font-size: 23px; font-weight: bold; color: #ffffff; line-height: 1.25; }
+.card-name { font-size: 22px; font-weight: bold; color: #ffffff; line-height: 1.25; }
 .card-meta { position: absolute; bottom: 16px; left: 20px; font-size: 16px; color: #94a3b8; }
-#playerOverlay { display: none; position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; background: #000000; z-index: 99; }
-#videoEl { width: 1920px; height: 1080px; background: #000000; }
-#playerHud { position: absolute; bottom: 40px; left: 60px; right: 60px; background: rgba(12,19,34,0.9); border: 2px solid #334155; border-radius: 14px; padding: 22px 30px; font-size: 24px; }
 </style>
 </head>
-<body>
-<div id="stage">
-  <div id="sidebar">
-    <div class="brand">XUPER<span>TV</span></div>
-    <div class="badge">ULTRA WEBOS</div>
-    <button class="nav-item active focus" data-tab="home">Inicio y Tendencias</button>
-    <button class="nav-item" data-tab="movies">Películas</button>
-    <button class="nav-item" data-tab="series">Series</button>
-    <button class="nav-item" data-tab="live">TV en Vivo</button>
-    <button class="nav-item" data-tab="diag">Diagnóstico Servicio</button>
+<body style="margin:0;padding:0;background:#070b14;color:#f8fafc;font-family:Arial,sans-serif;overflow:hidden;">
+<div id="stage" style="position:absolute;top:0;left:0;width:1920px;height:1080px;background:#070b14;-webkit-transform-origin:0 0;transform-origin:0 0;overflow:hidden;">
+  <div id="sidebar" style="position:absolute;top:0;left:0;width:290px;height:1080px;background:#0c1322;border-right:2px solid #1e293b;padding:40px 24px;">
+    <div style="font-size:38px;font-weight:bold;color:#ffffff;letter-spacing:1px;margin-bottom:10px;">XUPER<span style="color:#e50914;">TV</span></div>
+    <div style="display:inline-block;background:#1e293b;color:#38bdf8;font-size:16px;padding:6px 12px;border-radius:6px;margin-bottom:40px;">ULTRA WEBOS</div>
+    <button class="nav-item active focus" data-tab="home" onclick="selectTab('home', this)">Inicio</button>
+    <button class="nav-item" data-tab="movies" onclick="selectTab('movies', this)">Pel&iacute;culas</button>
+    <button class="nav-item" data-tab="series" onclick="selectTab('series', this)">Series</button>
+    <button class="nav-item" data-tab="live" onclick="selectTab('live', this)">TV en Vivo</button>
+    <button class="nav-item" data-tab="diag" onclick="selectTab('diag', this)">Diagn&oacute;stico</button>
   </div>
-  <div id="main">
-    <div id="topbar">
-      <input id="searchBox" type="text" placeholder="Buscar película, serie o canal...">
-      <div id="srvStatus">Conectando servicio Luna...</div>
+  <div id="main" style="position:absolute;top:0;left:290px;width:1630px;height:1080px;padding:36px 48px;overflow:hidden;">
+    <div id="topbar" style="height:64px;margin-bottom:24px;">
+      <input id="searchBox" type="text" placeholder="Buscar t&iacute;tulo o canal..." style="float:left;width:520px;height:56px;background:#111827;border:2px solid #334155;border-radius:10px;color:#ffffff;font-size:22px;padding:0 18px;">
+      <div id="srvStatus" style="float:right;background:#111827;border:2px solid #1e293b;border-radius:10px;padding:14px 22px;font-size:20px;color:#38bdf8;">Conectando servicio...</div>
     </div>
-    <div id="hero">
-      <div id="heroTag">DESTACADO</div>
-      <div id="heroTitle">XuperTV Ultra Listo</div>
-      <div id="heroDesc">Usa las flechas del control remoto para navegar y presiona OK para reproducir. Pulsa Diagnóstico Servicio si el catálogo aparece vacío.</div>
-      <button id="btnHeroPlay" class="btn btn-play">Reproducir Ahora</button>
-      <button id="btnHeroReload" class="btn btn-sec">Recargar Catálogo</button>
+    <div id="hero" style="position:relative;width:1534px;height:330px;background:#111827;border:2px solid #1e293b;border-radius:18px;padding:36px 44px;margin-bottom:32px;">
+      <div style="display:inline-block;background:#e50914;color:#ffffff;font-size:16px;font-weight:bold;padding:6px 14px;border-radius:6px;margin-bottom:14px;">DESTACADO</div>
+      <div id="heroTitle" style="font-size:44px;font-weight:bold;color:#ffffff;margin-bottom:12px;">XuperTV Ultra Conectado</div>
+      <div id="heroDesc" style="font-size:22px;color:#cbd5e1;width:980px;line-height:1.4;margin-bottom:24px;">Usa las flechas o el puntero del control remoto para elegir un t&iacute;tulo y presiona OK para reproducir.</div>
+      <button id="btnHeroPlay" class="btn btn-play" onclick="playItem(items[0])">Reproducir Ahora</button>
+      <button id="btnHeroReload" class="btn btn-sec" onclick="loadCatalog()">Recargar Cat&aacute;logo</button>
     </div>
-    <div id="sectionHeader" class="sec-title">Catálogo Disponible (0 Títulos)</div>
-    <div id="cardsRow"></div>
+    <div id="sectionHeader" style="font-size:26px;font-weight:bold;color:#f1f5f9;margin-bottom:16px;">Cat&aacute;logo Disponible (0 T&iacute;tulos)</div>
+    <div id="cardsRow" style="width:1550px;height:450px;overflow:hidden;"></div>
   </div>
-  <div id="playerOverlay">
-    <video id="videoEl" autoplay playsinline></video>
-    <div id="playerHud">Reproduciendo... Presiona ATRÁS (BACK) para volver al catálogo.</div>
+  <div id="playerOverlay" style="display:none;position:absolute;top:0;left:0;width:1920px;height:1080px;background:#000000;z-index:99;">
+    <video id="videoEl" autoplay playsinline style="width:1920px;height:1080px;background:#000000;"></video>
+    <div id="playerHud" style="position:absolute;bottom:40px;left:60px;right:60px;background:rgba(12,19,34,0.92);border:2px solid #334155;border-radius:14px;padding:22px 30px;font-size:24px;color:#ffffff;">Reproduciendo... Presiona ATR&Aacute;S para volver.</div>
   </div>
 </div>
 <script>
-(function() {
-  var SERVICE_URI = "luna://com.webosflux.xuptertv.fidelity.service";
-  var items = [];
-  var currentTab = "home";
-  var focusIndex = 0;
+var SERVICE_URI = "luna://com.webosflux.xuptertv.fidelity.service";
+var items = [];
+var currentTab = "home";
+var focusIndex = 0;
 
-  function scaleStage() {
-    var s = document.getElementById("stage");
-    var sx = window.innerWidth / 1920;
-    var sy = window.innerHeight / 1080;
-    var scale = sx < sy ? sx : sy;
-    s.style.webkitTransform = "scale(" + scale + ")";
-    s.style.transform = "scale(" + scale + ")";
-  }
-  window.addEventListener("resize", scaleStage);
-  scaleStage();
+function scaleStage() {
+  var s = document.getElementById("stage");
+  var sx = window.innerWidth / 1920;
+  var sy = window.innerHeight / 1080;
+  var scale = sx < sy ? sx : sy;
+  s.style.webkitTransform = "scale(" + scale + ")";
+  s.style.transform = "scale(" + scale + ")";
+}
+window.addEventListener("resize", scaleStage);
+scaleStage();
 
-  function setStatus(txt, ok) {
-    var el = document.getElementById("srvStatus");
-    el.innerHTML = txt;
-    el.style.color = ok ? "#4ade80" : "#f87171";
-  }
+function setStatus(txt, ok) {
+  var el = document.getElementById("srvStatus");
+  el.innerHTML = txt;
+  el.style.color = ok ? "#4ade80" : "#f87171";
+}
 
-  function callLuna(method, params, cb) {
-    try {
-      if (window.webOS && webOS.service) {
-        webOS.service.request(SERVICE_URI, {
-          method: method,
-          parameters: params || {},
-          onSuccess: function(res) { cb(null, res); },
-          onFailure: function(err) { cb(err, null); }
-        });
-        return;
-      }
-      if (window.PalmServiceBridge) {
-        var bridge = new PalmServiceBridge();
-        bridge.onservicecallback = function(msg) {
-          var data = JSON.parse(msg);
-          if (data.returnValue === false) cb(data, null);
-          else cb(null, data);
-        };
-        bridge.call(SERVICE_URI + "/" + method, JSON.stringify(params || {}));
-        return;
-      }
-    } catch (e) {}
-    cb({ errorText: "Sin puente Luna" }, null);
-  }
-
-  function renderCards(list) {
-    var row = document.getElementById("cardsRow");
-    var header = document.getElementById("sectionHeader");
-    header.innerHTML = "Catálogo Disponible (" + list.length + " Títulos)";
-    if (!list.length) {
-      row.innerHTML = '<div class="card" style="width:720px"><div class="card-cat">ESTADO DEL CATÁLOGO</div><div class="card-name">No se recibieron títulos del servicio aún</div><div class="card-meta">Verifica que las semillas (seeds) estén cargadas en el servicio</div></div>';
+function callLuna(method, params, cb) {
+  try {
+    if (window.webOS && webOS.service) {
+      webOS.service.request(SERVICE_URI, {
+        method: method,
+        parameters: params || {},
+        onSuccess: function(res) { cb(null, res); },
+        onFailure: function(err) { cb(err, null); }
+      });
       return;
     }
-    var html = "";
-    for (var i = 0; i < list.length && i < 10; i++) {
-      var it = list[i];
-      var title = it.title || it.name || "Canal / Título " + (i + 1);
-      var cat = it.category || it.group || currentTab.toUpperCase();
-      var meta = it.year || it.tvgId || "Listo para reproducir";
-      html += '<div class="card focusable" data-idx="' + i + '"><div class="card-cat">' + cat + '</div><div class="card-name">' + title + '</div><div class="card-meta">' + meta + '</div></div>';
+    if (window.PalmServiceBridge) {
+      var bridge = new PalmServiceBridge();
+      bridge.onservicecallback = function(msg) {
+        var data = JSON.parse(msg);
+        if (data.returnValue === false) cb(data, null);
+        else cb(null, data);
+      };
+      bridge.call(SERVICE_URI + "/" + method, JSON.stringify(params || {}));
+      return;
     }
-    row.innerHTML = html;
-  }
+  } catch (e) {}
+  cb({ errorText: "Sin puente Luna" }, null);
+}
 
-  function loadCatalog() {
-    setStatus("Sincronizando catálogo...", true);
-    var method = currentTab === "live" ? "live" : "bootstrap";
-    callLuna(method, { tab: currentTab }, function(err, res) {
-      if (err) {
-        callLuna("status", {}, function(e2, r2) {
-          if (e2) setStatus("Servicio detenido o sin permisos", false);
-          else setStatus("Servicio activo (sin datos en " + method + ")", true);
-        });
-        renderCards([]);
-        return;
-      }
-      setStatus("Servicio Luna Conectado", true);
-      var list = res.items || res.catalog || res.channels || res.trending || [];
-      items = list;
-      if (list.length > 0) {
-        document.getElementById("heroTitle").innerHTML = list[0].title || list[0].name || "Contenido Disponible";
-        document.getElementById("heroDesc").innerHTML = list[0].description || list[0].synopsis || "Presiona Reproducir Ahora o selecciona cualquier tarjeta inferior.";
-      }
-      renderCards(list);
+function renderCards(list) {
+  var row = document.getElementById("cardsRow");
+  var header = document.getElementById("sectionHeader");
+  header.innerHTML = "Cat&aacute;logo Disponible (" + list.length + " T&iacute;tulos)";
+  if (!list.length) {
+    row.innerHTML = '<div class="card" style="width:760px"><div class="card-cat">ESTADO DEL CAT&Aacute;LOGO</div><div class="card-name">Servicio conectado, esperando semillas o listas</div><div class="card-meta">Pulsa Recargar Cat&aacute;logo o verifica las seeds en el servicio</div></div>';
+    return;
+  }
+  var html = "";
+  for (var i = 0; i < list.length && i < 10; i++) {
+    var it = list[i];
+    var title = it.title || it.name || "T&iacute;tulo " + (i + 1);
+    var cat = it.category || it.group || currentTab.toUpperCase();
+    var meta = it.year || it.tvgId || "Listo para reproducir";
+    html += '<div class="card focusable" data-idx="' + i + '" onclick="playItem(items[' + i + '])"><div class="card-cat">' + cat + '</div><div class="card-name">' + title + '</div><div class="card-meta">' + meta + '</div></div>';
+  }
+  row.innerHTML = html;
+}
+
+function loadCatalog() {
+  setStatus("Sincronizando cat&aacute;logo...", true);
+  var method = currentTab === "live" ? "live" : "bootstrap";
+  callLuna(method, { tab: currentTab }, function(err, res) {
+    if (err) {
+      callLuna("status", {}, function(e2, r2) {
+        if (e2) setStatus("Servicio detenido", false);
+        else setStatus("Servicio Luna Activo", true);
+      });
+      renderCards([]);
+      return;
+    }
+    setStatus("Servicio Luna Conectado", true);
+    var list = res.items || res.catalog || res.channels || res.trending || [];
+    items = list;
+    if (list.length > 0) {
+      document.getElementById("heroTitle").innerHTML = list[0].title || list[0].name || "Contenido Disponible";
+      document.getElementById("heroDesc").innerHTML = list[0].description || list[0].synopsis || "Selecciona cualquier tarjeta inferior para reproducir.";
+    }
+    renderCards(list);
+  });
+}
+
+function selectTab(tab, el) {
+  var navs = document.querySelectorAll(".nav-item");
+  for (var i = 0; i < navs.length; i++) navs[i].classList.remove("active");
+  if (el) el.classList.add("active");
+  currentTab = tab;
+  if (tab === "diag") {
+    callLuna("status", {}, function(err, res) {
+      setStatus(err ? "Error en servicio" : "Servicio OK (1920x1080)", !err);
     });
+  } else {
+    loadCatalog();
   }
+}
 
-  function playItem(item) {
-    if (!item) return;
-    var overlay = document.getElementById("playerOverlay");
-    var video = document.getElementById("videoEl");
-    var hud = document.getElementById("playerHud");
-    overlay.style.display = "block";
-    hud.innerHTML = "Cargando flujo: " + (item.title || item.name || "Video") + "...";
-    var directUrl = item.url || item.streamUrl;
-    if (directUrl) {
-      video.src = directUrl;
+function playItem(item) {
+  if (!item) return;
+  var overlay = document.getElementById("playerOverlay");
+  var video = document.getElementById("videoEl");
+  var hud = document.getElementById("playerHud");
+  overlay.style.display = "block";
+  hud.innerHTML = "Cargando: " + (item.title || item.name || "Video") + "...";
+  var directUrl = item.url || item.streamUrl;
+  if (directUrl) {
+    video.src = directUrl;
+    video.play();
+    return;
+  }
+  callLuna("resolve", { id: item.id, url: item.link || "" }, function(err, res) {
+    if (res && (res.streamUrl || res.url)) {
+      video.src = res.streamUrl || res.url;
       video.play();
-      return;
-    }
-    callLuna("resolve", { id: item.id, url: item.link || "" }, function(err, res) {
-      if (res && (res.streamUrl || res.url)) {
-        video.src = res.streamUrl || res.url;
-        video.play();
-        hud.innerHTML = (item.title || item.name) + " — Presiona ATRÁS para salir";
-      } else {
-        hud.innerHTML = "No se pudo obtener la URL de reproducción. Presiona ATRÁS.";
-      }
-    });
-  }
-
-  function updateFocus() {
-    var focusables = document.querySelectorAll(".nav-item, #searchBox, #btnHeroPlay, #btnHeroReload, .card.focusable");
-    if (!focusables.length) return;
-    if (focusIndex < 0) focusIndex = 0;
-    if (focusIndex >= focusables.length) focusIndex = focusables.length - 1;
-    for (var i = 0; i < focusables.length; i++) {
-      focusables[i].classList.remove("focus");
-    }
-    var cur = focusables[focusIndex];
-    cur.classList.add("focus");
-    if (cur.id === "searchBox") cur.focus();
-  }
-
-  document.addEventListener("keydown", function(e) {
-    var code = e.keyCode;
-    var overlay = document.getElementById("playerOverlay");
-    if (overlay.style.display === "block") {
-      if (code === 461 || code === 27 || code === 8) {
-        var v = document.getElementById("videoEl");
-        v.pause();
-        v.src = "";
-        overlay.style.display = "none";
-      }
-      return;
-    }
-    if (code === 38 || code === 37) { focusIndex--; updateFocus(); }
-    else if (code === 40 || code === 39) { focusIndex++; updateFocus(); }
-    else if (code === 13) {
-      var cur = document.querySelector(".focus");
-      if (!cur) return;
-      if (cur.classList.contains("nav-item")) {
-        var navs = document.querySelectorAll(".nav-item");
-        for (var i = 0; i < navs.length; i++) navs[i].classList.remove("active");
-        cur.classList.add("active");
-        currentTab = cur.getAttribute("data-tab");
-        if (currentTab === "diag") {
-          callLuna("status", {}, function(err, res) {
-            alert(err ? "Error Luna: " + JSON.stringify(err) : "Servicio OK: " + JSON.stringify(res));
-          });
-        } else {
-          loadCatalog();
-        }
-      } else if (cur.id === "btnHeroReload") {
-        loadCatalog();
-      } else if (cur.id === "btnHeroPlay") {
-        playItem(items[0]);
-      } else if (cur.classList.contains("card")) {
-        var idx = parseInt(cur.getAttribute("data-idx"), 10);
-        playItem(items[idx]);
-      }
+      hud.innerHTML = (item.title || item.name) + " - Presiona ATR&Aacute;S para salir";
+    } else {
+      hud.innerHTML = "No se obtuvo URL de video. Presiona ATR&Aacute;S.";
     }
   });
+}
 
-  loadCatalog();
-  updateFocus();
-})();
+function updateFocus() {
+  var focusables = document.querySelectorAll(".nav-item, #searchBox, #btnHeroPlay, #btnHeroReload, .card.focusable");
+  if (!focusables.length) return;
+  if (focusIndex < 0) focusIndex = 0;
+  if (focusIndex >= focusables.length) focusIndex = focusables.length - 1;
+  for (var i = 0; i < focusables.length; i++) focusables[i].classList.remove("focus");
+  var cur = focusables[focusIndex];
+  cur.classList.add("focus");
+  if (cur.id === "searchBox") cur.focus();
+}
+
+document.addEventListener("keydown", function(e) {
+  var code = e.keyCode;
+  var overlay = document.getElementById("playerOverlay");
+  if (overlay.style.display === "block") {
+    if (code === 461 || code === 27 || code === 8) {
+      var v = document.getElementById("videoEl");
+      v.pause();
+      v.src = "";
+      overlay.style.display = "none";
+    }
+    return;
+  }
+  if (code === 38 || code === 37) { focusIndex--; updateFocus(); }
+  else if (code === 40 || code === 39) { focusIndex++; updateFocus(); }
+  else if (code === 13) {
+    var cur = document.querySelector(".focus");
+    if (cur && cur.click) cur.click();
+  }
+});
+
+loadCatalog();
+updateFocus();
 </script>
 </body>
 </html>
